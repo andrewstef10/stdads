@@ -16,6 +16,7 @@ env:
 
 jobs:
   clang_format:
+    name: Clang Format
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +24,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Check format
-        run: py scripts/format.py --echo --check
+        run: python scripts/format.py --echo --check
 
 
   clang_tidy:
