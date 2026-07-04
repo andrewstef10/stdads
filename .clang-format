@@ -2,4 +2,5 @@ BasedOnStyle: LLVM
 
 ColumnLimit: 120
 InsertNewlineAtEOF: true
+PointerAlignment: Left
 AlwaysBreakTemplateDeclarations: true

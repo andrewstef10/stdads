@@ -15,6 +15,17 @@ env:
 
 
 jobs:
+  clang_format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check format
+        run: py scripts/format.py --echo --check
+
+
   clang_tidy:
     name: Clang Tidy
     runs-on: ubuntu-latest
@@ -34,7 +45,7 @@ jobs:
   build:
     name: Build & Test (${{ matrix.os }} / ${{ matrix.type.preset }}
     runs-on: ${{ matrix.os }}
-    needs: clang_tidy # Run build after clang-tidy succeeds
+    needs: [clang_tidy, clang_format] # Run build after clang-tidy and clang-format succeeds
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations.
