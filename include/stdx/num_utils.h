@@ -72,35 +72,35 @@ bool clamp(T& val, const T& low, const T& high);
 
 template <typename T>
 inline bool within(const T& val, const T& low, const T& high) {
-  return val >= low && val <= high;
+    return val >= low && val <= high;
 }
 
 template <typename T>
 inline bool within_exclusive(const T& val, const T& low, const T& high) {
-  return val > low && val < high;
+    return val > low && val < high;
 }
 
 template <typename T>
 inline bool outside(const T& val, const T& low, const T& high) {
-  return val < low || val > high;
+    return val < low || val > high;
 }
 
 template <typename T>
 inline bool outside_inclusive(const T& val, const T& low, const T& high) {
-  return val <= low || val >= high;
+    return val <= low || val >= high;
 }
 
 template <typename T>
 inline bool clamp(T& val, const T& low, const T& high) {
-  bool limited = false;
-  if (val < low) {
-    val = low;
-    limited = true;
-  } else if (val > high) {
-    val = high;
-    limited = true;
-  }
-  return limited;
+    bool limited = false;
+    if (val < low) {
+        val = low;
+        limited = true;
+    } else if (val > high) {
+        val = high;
+        limited = true;
+    }
+    return limited;
 }
 
 } // namespace stdx

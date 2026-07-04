@@ -28,22 +28,22 @@ namespace stdx {
 /// `bool equals(const Derived&) const`.
 template <typename Derived>
 class equatable {
-public:
-  /// @brief Equality operator
-  /// @param lhs left hand side
-  /// @param rhs right had side
-  /// @return True if lhs is equal to rhs, false otherwise.
-  friend bool operator==(const Derived& lhs, const Derived& rhs) { return lhs.equals(rhs); }
+  public:
+    /// @brief Equality operator
+    /// @param lhs left hand side
+    /// @param rhs right had side
+    /// @return True if lhs is equal to rhs, false otherwise.
+    friend bool operator==(const Derived& lhs, const Derived& rhs) { return lhs.equals(rhs); }
 
-  /// @brief Inequality operator
-  /// @param lhs left hand side iterator
-  /// @param rhs right had side iterator
-  /// @return True if lhs is not equal to rhs, false otherwise.
-  friend bool operator!=(const Derived& lhs, const Derived& rhs) { return !lhs.equals(rhs); }
+    /// @brief Inequality operator
+    /// @param lhs left hand side iterator
+    /// @param rhs right had side iterator
+    /// @return True if lhs is not equal to rhs, false otherwise.
+    friend bool operator!=(const Derived& lhs, const Derived& rhs) { return !lhs.equals(rhs); }
 
-protected:
-  // ==== equatable should not be constructed directly ====
-  equatable() = default; // NOLINT(bugprone-crtp-constructor-accessibility)
+  protected:
+    // ==== equatable should not be constructed directly ====
+    equatable() = default; // NOLINT(bugprone-crtp-constructor-accessibility)
 };
 } // namespace stdx
 
