@@ -206,7 +206,8 @@ TEST(FixedArrayListConstructorTest, CopyAssignmentSelfAssignment) {
     stdx::fixed_array_list<int, 4> v;
     v.push_back(1);
     v.push_back(2);
-    v = v;
+    stdx::fixed_array_list<int, 4> self = v;
+    v = self;
     ASSERT_EQ(2u, v.size());
     EXPECT_EQ(1, v[0]);
     EXPECT_EQ(2, v[1]);

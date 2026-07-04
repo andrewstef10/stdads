@@ -172,10 +172,10 @@ namespace stdx {
 
         /// @brief Compares two allocators
         /// @tparam U Other allocator's type
-        /// @param other Other allocator
+        /// @param
         /// @return true always because allocators of any type T are equal
         template<typename U>
-        bool constexpr equals(const allocator<U>& other) const noexcept { return true; }
+        bool constexpr equals(const allocator<U>&) const noexcept { return true; }
 
         /// @brief Equality operator
         /// @tparam U Other allocator's type
@@ -204,7 +204,7 @@ namespace stdx {
     }
 
     template<typename T>
-    inline void allocator<T>::deallocate(T* ptr, std::size_t n) noexcept
+    inline void allocator<T>::deallocate(T* ptr, std::size_t) noexcept
     {
     // #if __cpp_sized_deallocation
     //         ::operator delete(ptr, n * sizeof(T));
