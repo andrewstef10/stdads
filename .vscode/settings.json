@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
-        "stdx"
+        "stdx",
+        "Doxyfile"
     ],
     "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
     "editor.formatOnSave": true,

@@ -177,7 +177,7 @@ jobs:
         sudo apt-get install -y doxygen
 
     - name: Generate Documentation
-      run: doxygen Doxyfile
+      run: python scripts/doxygen.py --echo
 
     - name: Upload Documentation Artifact
       uses: actions/upload-artifact@v6
