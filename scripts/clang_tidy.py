@@ -6,10 +6,9 @@ import shutil
 import sys
 from pathlib import Path
 
-from utils.run_command import run_command
+from utils.run_command import REPO_ROOT, run_command
 
 PATHS = ["stdx.src"]
-DEFAULT_BUILD_DIR = "build/clang-release"
 
 
 def main():
@@ -17,8 +16,8 @@ def main():
     parser.add_argument(
         "-p",
         "--build-dir",
-        default=DEFAULT_BUILD_DIR,
-        help=f"Build directory containing compile_commands.json (default: {DEFAULT_BUILD_DIR}).",
+        default=REPO_ROOT,
+        help=f"Build directory containing compile_commands.json (default: {REPO_ROOT}).",
     )
     parser.add_argument(
         "-e",

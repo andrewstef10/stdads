@@ -51,6 +51,24 @@ message(STATUS "CMAKE_BUILD_TYPE             = ${CMAKE_BUILD_TYPE}")
 message(STATUS "----Other----")
 message(STATUS "COVERAGE_DIR                 = ${COVERAGE_DIR}")
 
+# ---- compile_commands.json symlink ----
+# Keeps a stable ${CMAKE_SOURCE_DIR}/compile_commands.json pointing at whichever
+# preset was configured most recently, so clangd works regardless of build dir.
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+    message(STATUS "Creating symbolic link to ${CMAKE_BINARY_DIR}/compile_commands.json in ${CMAKE_SOURCE_DIR}")
+    file(CREATE_LINK
+        "${CMAKE_BINARY_DIR}/compile_commands.json"
+        "${CMAKE_SOURCE_DIR}/compile_commands.json"
+        SYMBOLIC
+        RESULT _compile_commands_link_result
+    )
+    if(NOT _compile_commands_link_result EQUAL 0)
+        message(WARNING
+            "Failed to create symlink at ${CMAKE_SOURCE_DIR}/compile_commands.json (${_compile_commands_link_result})\n"
+            "On Windows, this requires Developer Mode (or admin) and the likely fix is to turn on developer mode in settings.\n")
+    endif()
+    unset(_compile_commands_link_result)
+endif()
 
 # ============================================================
 # Compiler Flags / properties functions for Targets
