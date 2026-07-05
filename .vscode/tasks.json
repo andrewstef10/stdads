@@ -1,0 +1,52 @@
+{
+	"version": "2.0.0",
+	"_runner": "terminal",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "CMake: configure",
+			"command": "cmake --preset ${command:cmake.activeConfigurePresetName}",
+			"problemMatcher": [],
+			"detail": "CMake configure task"
+		},
+		{
+			"type": "shell",
+			"label": "CMake: build",
+			"command": "cmake --build --preset ${command:cmake.activeBuildPresetName}",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"detail": "CMake build task"
+		},
+		{
+			"type": "shell",
+			"label": "CMake: ctest",
+			"command": "ctest --preset ${command:cmake.activeTestPresetName}",
+			"problemMatcher": [],
+			"detail": "CMake unit test task"
+		},
+		{
+			"type": "shell",
+			"label": "CMake: LLVM Coverage",
+			"command": "cmake --build --preset ${command:cmake.activeBuildPresetName}-coverage",
+			"problemMatcher": [],
+			"detail": "Generate LLVM coverage with CMake. Must configure with coverage enabled."
+		},
+		{
+			"type": "shell",
+			"label": "Run Clang Tidy",
+			"command": "python scripts/clang_tidy.py -p build/${command:cmake.activeConfigurePresetName}",
+			"problemMatcher": [],
+			"detail": "Run clang-tidy. Must configure with clang tidy enabled."
+		},
+		{
+			"type": "shell",
+			"label": "Run Clang Format",
+			"command": "python scripts/format.py",
+			"problemMatcher": [],
+			"detail": "Run clang-format to format all C++ code"
+		}
+	]
+}

@@ -1,6 +1,5 @@
 #include <stdx/stdxlib.h>
 
-#include <cstddef>
 #include <stdx/ctype.h>
 #include <stdx/string.h>
 

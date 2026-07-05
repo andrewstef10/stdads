@@ -1,0 +1,10 @@
+CompileFlags:
+  CompilationDatabase: build/dev
+
+---
+If:
+  PathMatch: tests/.*
+
+Diagnostics:
+  ClangTidy:
+    Remove: ["*"]
