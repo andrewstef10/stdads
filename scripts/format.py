@@ -3,21 +3,13 @@
 
 import argparse
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from utils.run_command import REPO_ROOT, run_command
+
 SOURCE_DIRS = ["include", "src", "tests"]
 EXTENSIONS = {".h", ".hpp", ".hh", ".c", ".cpp", ".cc", ".cxx"}
-BOLD = "\033[1m"
-RESET = "\033[0m"
-
-
-def run_command(command, echo):
-    if echo:
-        print(f"{BOLD}{' '.join(command)}{RESET}", flush=True)
-    return subprocess.run(command, cwd=REPO_ROOT)
 
 
 def find_sources_in(directory):
@@ -77,6 +69,11 @@ def main():
     if not files:
         print("No C++ source files found.")
         return 0
+
+    # Run version command
+    version_result = run_command([clang_format, "--version"], args.echo)
+    if version_result.returncode != 0:
+        return version_result.returncode
 
     if args.check:
         command = [clang_format, "--style=file", "--dry-run", "--Werror"]

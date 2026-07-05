@@ -49,7 +49,7 @@ message(STATUS "CMAKE_SIZEOF_VOID_P          = ${CMAKE_SIZEOF_VOID_P}")
 message(STATUS "CMAKE_BUILD_TYPE             = ${CMAKE_BUILD_TYPE}")
 
 message(STATUS "----Other----")
-message(STATUS "COVERAGE_DIR                    = ${COVERAGE_DIR}")
+message(STATUS "COVERAGE_DIR                 = ${COVERAGE_DIR}")
 
 
 # ============================================================

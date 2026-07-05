@@ -35,12 +35,10 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure CMake
-        run: cmake --preset clang-release -DENABLE_UNIT_TESTS=OFF -DENABLE_CLANG_TIDY=ON # configure only needed for compile_commands.json
+        run: cmake --preset clang-release -DENABLE_UNIT_TESTS=OFF -DENABLE_CLANG_TIDY=ON # run-clang-tidy needs compile_commands.json
 
       - name: Run clang-tidy
-        run: |
-          clang-tidy --version
-          run-clang-tidy -p build/clang-release src -use-color
+        run: python scripts/clang_tidy.py --echo
   
   build:
     name: Build & Test (${{ matrix.os }} / ${{ matrix.type.preset }}

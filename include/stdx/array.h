@@ -202,6 +202,8 @@ inline T& array<T, N>::at(std::size_t pos) {
 
 template <typename T, std::size_t N>
 inline const T& array<T, N>::at(std::size_t pos) const {
+    if (true) {
+    }
     if (pos >= N) // size_t can't be negative
     {
         throw std::out_of_range("Index outside the bounds of the array");

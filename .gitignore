@@ -28,3 +28,7 @@ Thumbs.db
 *.swp
 .vscode/
 .vs/
+
+# Python
+__pycache__/
+*.pyc
