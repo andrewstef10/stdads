@@ -7,7 +7,6 @@
 ## Table of Contents
 - [Prerequisites](#prerequisites)
   - [Minimum](#minimum)
-  - [Nice to have](#nice-to-have)
 - [Getting Started](#getting-started)
   - [1. Clone the repository](#1-clone-the-repository)
   - [2. Configure the project](#2-configure-the-project)

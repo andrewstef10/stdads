@@ -2,13 +2,19 @@
 """Run clang-tidy (via run-clang-tidy) over the C++ sources in the repo."""
 
 import argparse
+import re
 import shutil
 import sys
 from pathlib import Path
 
 from utils.run_command import REPO_ROOT, run_command
 
-PATHS = ["stdx.src"]
+# run-clang-tidy treats each positional argument as a regex matched against the absolute file
+# paths in compile_commands.json, not a directory to search. We anchor on this project's own
+# src/ directory (by absolute path) rather than the bare word "src" so that vendored dependency
+# sources (e.g. googletest, fetched into build/<preset>/_deps/googletest-src/... when unit tests
+# are enabled) are never swept in just because they also happen to contain a "src" path segment.
+PATHS = [re.escape((REPO_ROOT / "src").as_posix()).replace(r"/", r"[/\\]")]
 
 
 def main():
