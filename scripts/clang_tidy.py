@@ -16,7 +16,7 @@ def main():
     parser.add_argument(
         "-p",
         "--build-dir",
-        default=REPO_ROOT,
+        default=str(REPO_ROOT),
         help=f"Build directory containing compile_commands.json (default: {REPO_ROOT}).",
     )
     parser.add_argument(
