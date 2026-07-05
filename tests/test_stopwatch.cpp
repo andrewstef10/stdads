@@ -4,24 +4,21 @@
 #include <stdx/math.h>
 #include <thread>
 
-TEST(StopWatchTest, DefaultState)
-{
+TEST(StopWatchTest, DefaultState) {
     stdx::stopwatch sw;
 
     EXPECT_FALSE(sw.running());
     EXPECT_DOUBLE_EQ(0.0, sw.get_elapsed_time_sec());
 }
 
-TEST(StopWatchTest, StartSetsRunning)
-{
+TEST(StopWatchTest, StartSetsRunning) {
     stdx::stopwatch sw;
 
     sw.start();
     EXPECT_TRUE(sw.running());
 }
 
-TEST(StopWatchTest, StopSetsNotRunning)
-{
+TEST(StopWatchTest, StopSetsNotRunning) {
     stdx::stopwatch sw;
 
     sw.start();
@@ -29,8 +26,7 @@ TEST(StopWatchTest, StopSetsNotRunning)
     EXPECT_FALSE(sw.running());
 }
 
-TEST(StopWatchTest, StopNotRunningTimerDoesNothing)
-{
+TEST(StopWatchTest, StopNotRunningTimerDoesNothing) {
     stdx::stopwatch sw;
 
     sw.stop();
@@ -38,8 +34,7 @@ TEST(StopWatchTest, StopNotRunningTimerDoesNothing)
     EXPECT_DOUBLE_EQ(0.0, sw.get_elapsed_time_sec());
 }
 
-TEST(StopWatchTest, ElapsedTimeIncreasesWhileRunning)
-{
+TEST(StopWatchTest, ElapsedTimeIncreasesWhileRunning) {
     stdx::stopwatch sw;
 
     sw.start();
@@ -57,8 +52,7 @@ TEST(StopWatchTest, ElapsedTimeIncreasesWhileRunning)
     EXPECT_GE(t2, t1); // ensure monotonic
 }
 
-TEST(StopWatchTest, ElapsedTimeStopsAfterStop)
-{
+TEST(StopWatchTest, ElapsedTimeStopsAfterStop) {
     stdx::stopwatch sw;
 
     sw.start();
@@ -72,8 +66,7 @@ TEST(StopWatchTest, ElapsedTimeStopsAfterStop)
     EXPECT_EQ(t1, t2);
 }
 
-TEST(StopWatchTest, ResetClearsTime)
-{
+TEST(StopWatchTest, ResetClearsTime) {
     stdx::stopwatch sw;
 
     sw.start();
@@ -85,27 +78,25 @@ TEST(StopWatchTest, ResetClearsTime)
     EXPECT_EQ(0.0, sw.get_elapsed_time_sec());
 }
 
-TEST(StopWatchTest, StartWithResetClearsTime)
-{
+TEST(StopWatchTest, StartWithResetClearsTime) {
     stdx::stopwatch sw;
 
     sw.start();
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     sw.stop();
 
-    sw.start(true);  // reset + start
+    sw.start(true); // reset + start
 
     EXPECT_TRUE(sw.running());
     EXPECT_LT(sw.get_elapsed_time_sec(), 0.01);
 }
 
-TEST(StopWatchTest, MultipleStartCallsDoNothingIfAlreadyRunning)
-{
+TEST(StopWatchTest, MultipleStartCallsDoNothingIfAlreadyRunning) {
     stdx::stopwatch sw;
 
     sw.start();
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    sw.start(true);  // should do nothing
+    sw.start(true); // should do nothing
 
     EXPECT_GT(sw.get_elapsed_time_sec(), 0.0);
     EXPECT_TRUE(sw.running());
@@ -114,15 +105,14 @@ TEST(StopWatchTest, MultipleStartCallsDoNothingIfAlreadyRunning)
     EXPECT_GT(elapsedTimeMs, 0);
 }
 
-TEST(StopWatchTest, MeasuresApproximately100ms)
-{
+TEST(StopWatchTest, MeasuresApproximately100ms) {
     stdx::stopwatch sw;
 
     std::chrono::steady_clock::time_point realStart = std::chrono::steady_clock::now();
     sw.start();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    
+
     std::chrono::steady_clock::time_point realEnd = std::chrono::steady_clock::now();
     sw.stop();
 
@@ -131,13 +121,13 @@ TEST(StopWatchTest, MeasuresApproximately100ms)
     double elapsedTimeSec = sw.get_elapsed_time_sec();
     EXPECT_NEAR(expectedElapsedTimeSec, elapsedTimeSec, 0.001); // 1ms tolerance
 
-    long long expectedElapsedTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(realEnd - realStart).count();
+    long long expectedElapsedTimeMs =
+        std::chrono::duration_cast<std::chrono::milliseconds>(realEnd - realStart).count();
     long long elapsedTimeMs = sw.get_elapsed_time<std::chrono::milliseconds>().count();
     EXPECT_TRUE(stdx::abs(expectedElapsedTimeMs - elapsedTimeMs) <= 1LL); // 1ms tolerance
 }
 
-TEST(StopWatchTest, CopyConstructorAndAssignmentOperator)
-{
+TEST(StopWatchTest, CopyConstructorAndAssignmentOperator) {
     stdx::stopwatch sw;
 
     sw.start();
@@ -155,7 +145,6 @@ TEST(StopWatchTest, CopyConstructorAndAssignmentOperator)
     EXPECT_EQ(sw.running(), assignmentCopy.running());
     EXPECT_EQ(sw.get_elapsed_time_sec(), assignmentCopy.get_elapsed_time_sec());
     EXPECT_NE(&sw, &assignmentCopy);
-
 
     // Copy running timer
     sw.start();

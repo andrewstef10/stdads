@@ -10,6 +10,9 @@
 # Doxygen output directory
 /docs/
 
+# CMake
+compile_commands.json
+
 # Visual Studio
 *.suo
 *.user
@@ -26,5 +29,8 @@
 .DS_Store
 Thumbs.db
 *.swp
-.vscode/
 .vs/
+
+# Python
+__pycache__/
+*.pyc

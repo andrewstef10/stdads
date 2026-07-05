@@ -1,0 +1,14 @@
+{
+    "cSpell.words": [
+        "stdx",
+        "Doxyfile"
+    ],
+    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "C_Cpp.intelliSenseEngine": "disabled"
+}
