@@ -24,6 +24,10 @@
 			"type": "shell",
 			"label": "CMake: ctest",
 			"command": "ctest --preset ${command:cmake.activeTestPresetName}",
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
 			"problemMatcher": [],
 			"detail": "CMake unit test task"
 		},
