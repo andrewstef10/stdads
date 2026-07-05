@@ -193,8 +193,7 @@ array<T, N + M> operator+(const array<T, N>& lhs, const array<T, M>& rhs);
 
 template <typename T, std::size_t N>
 inline T& array<T, N>::at(std::size_t pos) {
-    if (pos >= N) // size_t can't be negative
-    {
+    if (pos >= N) {
         throw std::out_of_range("Index outside the bounds of the array");
     }
     return elems[pos];
@@ -202,10 +201,7 @@ inline T& array<T, N>::at(std::size_t pos) {
 
 template <typename T, std::size_t N>
 inline const T& array<T, N>::at(std::size_t pos) const {
-    if (true) {
-    }
-    if (pos >= N) // size_t can't be negative
-    {
+    if (pos >= N) {
         throw std::out_of_range("Index outside the bounds of the array");
     }
     return elems[pos];
