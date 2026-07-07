@@ -4,7 +4,7 @@
 TEST(AbsTest, Int) {
     EXPECT_EQ(10, stdx::abs(-10));
     EXPECT_EQ(10, stdx::abs(10));
-    EXPECT_EQ(0,  stdx::abs(0));
+    EXPECT_EQ(0, stdx::abs(0));
 }
 
 TEST(AbsTest, Long) {
@@ -13,7 +13,7 @@ TEST(AbsTest, Long) {
 
     EXPECT_EQ(pos, stdx::abs(neg));
     EXPECT_EQ(pos, stdx::abs(pos));
-    EXPECT_EQ(0L,  stdx::abs(0L));
+    EXPECT_EQ(0L, stdx::abs(0L));
 }
 
 TEST(AbsTest, LongLong) {
