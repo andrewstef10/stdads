@@ -168,7 +168,7 @@ class contiguous_container : public stdx::container<Derived, T> {
 };
 
 template <typename Derived, typename T>
-inline contiguous_container<Derived, T>::reference contiguous_container<Derived, T>::at(size_type index) {
+inline typename contiguous_container<Derived, T>::reference contiguous_container<Derived, T>::at(size_type index) {
     if (index >= this->size()) {
         throw std::out_of_range("Index outside the bounds of the container");
     }
@@ -176,7 +176,8 @@ inline contiguous_container<Derived, T>::reference contiguous_container<Derived,
 }
 
 template <typename Derived, typename T>
-inline contiguous_container<Derived, T>::const_reference contiguous_container<Derived, T>::at(size_type index) const {
+inline typename contiguous_container<Derived, T>::const_reference
+contiguous_container<Derived, T>::at(size_type index) const {
     if (index >= this->size()) {
         throw std::out_of_range("Index outside the bounds of the container");
     }

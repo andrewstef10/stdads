@@ -283,14 +283,14 @@ class reverse_iterator
 
     /// @brief Dereference operator
     /// @return A reference to this reverse iterator object
-    traits::reference operator*() const {
+    typename traits::reference operator*() const {
         Iterator tmp = m_base;
         return *--tmp;
     }
 
     /// @brief Class member access (arrow) operator
     /// @return A pointer to this reverse iterator object
-    traits::pointer operator->() const {
+    typename traits::pointer operator->() const {
         Iterator tmp = m_base;
         --tmp;
         return tmp.operator->();
@@ -310,13 +310,13 @@ class reverse_iterator
     /// @brief Advances the reverse iterator
     /// NOTE: Function is only available for iterators that are at least random access iterators
     /// @param n Number of elements to advance
-    void advance(traits::difference_type n) { m_base -= n; };
+    void advance(typename traits::difference_type n) { m_base -= n; };
 
     /// @brief Gets the distance from this iterator to other
     /// NOTE: Function is only available for iterators that are at least random access iterators
     /// @param other Other reverse iterator
     /// @return The distance between this and other
-    traits::difference_type distance_to(const reverse_iterator& other) const { return other.m_base - m_base; }
+    typename traits::difference_type distance_to(const reverse_iterator& other) const { return other.m_base - m_base; }
 
     /// @brief Determines if reverse_iterator other is less than this
     /// NOTE: Function is only available for iterators that are at least random access iterators
