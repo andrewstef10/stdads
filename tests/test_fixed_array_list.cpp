@@ -30,7 +30,10 @@ struct DestructorCounter {
     explicit DestructorCounter(int* c) : count(c) {}
     DestructorCounter(const DestructorCounter&) = default;
     DestructorCounter& operator=(const DestructorCounter&) = default;
-    ~DestructorCounter() { if (count) ++(*count); }
+    ~DestructorCounter() {
+        if (count)
+            ++(*count);
+    }
 };
 
 struct ConstructionCounter {
@@ -48,11 +51,10 @@ struct ConstructionCounter {
 };
 
 int ConstructionCounter::direct_constructions = 0;
-int ConstructionCounter::copy_constructions   = 0;
-int ConstructionCounter::move_constructions   = 0;
+int ConstructionCounter::copy_constructions = 0;
+int ConstructionCounter::move_constructions = 0;
 
 } // namespace
-
 
 // ===== Constructor / Assignment Tests =====
 
@@ -284,7 +286,9 @@ TEST(FixedArrayListConstructorTest, MoveConstructorDestroysSourceElements) {
         EXPECT_EQ(2, srcCount);
 
         // Repoint dst's elements so their destructors count separately at scope exit
-        for (auto& e : dst) { e.count = &dstCount; }
+        for (auto& e : dst) {
+            e.count = &dstCount;
+        }
     }
     EXPECT_EQ(2, dstCount);
 }
@@ -302,11 +306,12 @@ TEST(FixedArrayListConstructorTest, MoveAssignmentDestroysSourceElements) {
         EXPECT_EQ(2, srcCount);
 
         // Detach dst's elements so the outer scope exit doesn't add to srcCount
-        for (auto& e : dst) { e.count = nullptr; }
+        for (auto& e : dst) {
+            e.count = nullptr;
+        }
     }
     EXPECT_EQ(2, srcCount);
 }
-
 
 // ===== Element Access Tests =====
 
@@ -475,7 +480,6 @@ TEST(FixedArrayListElementAccessTest, FrontAndBackDistinctWhenSizeTwo) {
     EXPECT_NE(&v.front(), &v.back());
 }
 
-
 // ===== Capacity Tests =====
 
 TEST(FixedArrayListCapacityTest, EmptyOnDefault) {
@@ -559,7 +563,6 @@ TEST(FixedArrayListCapacityTest, DifferentNValues) {
     EXPECT_EQ(10u, v10.capacity());
     EXPECT_EQ(100u, v100.capacity());
 }
-
 
 // ===== Modifier Tests =====
 
@@ -710,8 +713,8 @@ TEST(FixedArrayListModifierTest, EmplaceBackConstructsInPlace) {
 
 TEST(FixedArrayListModifierTest, EmplaceBackNoCopyOrMove) {
     ConstructionCounter::direct_constructions = 0;
-    ConstructionCounter::copy_constructions   = 0;
-    ConstructionCounter::move_constructions   = 0;
+    ConstructionCounter::copy_constructions = 0;
+    ConstructionCounter::move_constructions = 0;
 
     stdx::fixed_array_list<ConstructionCounter, 5> v;
     v.emplace_back(5);
@@ -839,7 +842,7 @@ TEST(FixedArrayListModifierTest, InsertSelfReferenceWithSpareCapacity) {
     // value aliases an element already in the container
     auto it = v.insert(v.begin(), v[2]);
     ASSERT_EQ(4u, v.size());
-    EXPECT_EQ(30, v[0]);     // the original v[2] value, not a shifted-over one
+    EXPECT_EQ(30, v[0]); // the original v[2] value, not a shifted-over one
     EXPECT_EQ(10, v[1]);
     EXPECT_EQ(20, v[2]);
     EXPECT_EQ(30, v[3]);
@@ -848,7 +851,7 @@ TEST(FixedArrayListModifierTest, InsertSelfReferenceWithSpareCapacity) {
     it = v.insert(v.begin(), std::move(v[2]));
     ASSERT_EQ(5u, v.size());
     EXPECT_EQ(20, v[0]);
-    EXPECT_EQ(30, v[1]);     // the original v[2] value, not a shifted-over one
+    EXPECT_EQ(30, v[1]); // the original v[2] value, not a shifted-over one
     EXPECT_EQ(10, v[2]);
     EXPECT_EQ(20, v[3]);
     EXPECT_EQ(30, v[4]);
@@ -905,8 +908,8 @@ TEST(FixedArrayListModifierTest, EmplaceWithMultipleArgs) {
     ASSERT_EQ(2u, v.size());
     EXPECT_EQ(10, v[0].x);
     EXPECT_EQ(20, v[0].y);
-    EXPECT_EQ(1,  v[1].x);
-    EXPECT_EQ(2,  v[1].y);
+    EXPECT_EQ(1, v[1].x);
+    EXPECT_EQ(2, v[1].y);
     EXPECT_EQ(10, it->x);
     EXPECT_EQ(20, it->y);
 }
@@ -1186,7 +1189,6 @@ TEST(FixedArrayListModifierTest, SwapMoveOnlyType) {
     EXPECT_EQ(2, b[1].value);
 }
 
-
 // ===== Iterator Tests =====
 
 TEST(FixedArrayListIteratorTest, BeginEqualsEndWhenEmpty) {
@@ -1332,7 +1334,6 @@ TEST(FixedArrayListIteratorTest, MutableIteratorAllowsWrite) {
     EXPECT_EQ(6, v[2]);
 }
 
-
 // ===== Comparison Tests =====
 
 TEST(FixedArrayListComparisonTest, EqualsTwoEmpty) {
@@ -1344,16 +1345,22 @@ TEST(FixedArrayListComparisonTest, EqualsTwoEmpty) {
 
 TEST(FixedArrayListComparisonTest, EqualsSameElements) {
     stdx::fixed_array_list<int, 5> a, b;
-    a.push_back(1); a.push_back(2); a.push_back(3);
-    b.push_back(1); b.push_back(2); b.push_back(3);
+    a.push_back(1);
+    a.push_back(2);
+    a.push_back(3);
+    b.push_back(1);
+    b.push_back(2);
+    b.push_back(3);
     EXPECT_TRUE(a.equals(b));
     EXPECT_TRUE(a == b);
 }
 
 TEST(FixedArrayListComparisonTest, EqualsNotEqualElements) {
     stdx::fixed_array_list<int, 5> a, b;
-    a.push_back(1); a.push_back(2);
-    b.push_back(1); b.push_back(3);
+    a.push_back(1);
+    a.push_back(2);
+    b.push_back(1);
+    b.push_back(3);
     EXPECT_FALSE(a.equals(b));
     EXPECT_FALSE(a == b);
     EXPECT_TRUE(a != b);
@@ -1361,16 +1368,22 @@ TEST(FixedArrayListComparisonTest, EqualsNotEqualElements) {
 
 TEST(FixedArrayListComparisonTest, EqualsNotEqualSizesASmaller) {
     stdx::fixed_array_list<int, 5> a, b;
-    a.push_back(1); a.push_back(2);
-    b.push_back(1); b.push_back(2); b.push_back(3);
+    a.push_back(1);
+    a.push_back(2);
+    b.push_back(1);
+    b.push_back(2);
+    b.push_back(3);
     EXPECT_FALSE(a.equals(b));
     EXPECT_FALSE(a == b);
 }
 
 TEST(FixedArrayListComparisonTest, EqualsNotEqualSizesALarger) {
     stdx::fixed_array_list<int, 5> a, b;
-    a.push_back(1); a.push_back(2); a.push_back(3);
-    b.push_back(1); b.push_back(2);
+    a.push_back(1);
+    a.push_back(2);
+    a.push_back(3);
+    b.push_back(1);
+    b.push_back(2);
     EXPECT_FALSE(a.equals(b));
     EXPECT_FALSE(a == b);
 }
@@ -1384,8 +1397,12 @@ TEST(FixedArrayListComparisonTest, EqualsEmptyVsNonEmpty) {
 
 TEST(FixedArrayListComparisonTest, LessThanLexicographic) {
     stdx::fixed_array_list<int, 5> a, b;
-    a.push_back(1); a.push_back(2); a.push_back(3);
-    b.push_back(1); b.push_back(2); b.push_back(4);
+    a.push_back(1);
+    a.push_back(2);
+    a.push_back(3);
+    b.push_back(1);
+    b.push_back(2);
+    b.push_back(4);
     EXPECT_TRUE(a.less_than(b));
     EXPECT_TRUE(a < b);
     EXPECT_FALSE(b < a);
@@ -1393,8 +1410,11 @@ TEST(FixedArrayListComparisonTest, LessThanLexicographic) {
 
 TEST(FixedArrayListComparisonTest, LessThanBySize) {
     stdx::fixed_array_list<int, 5> a, b;
-    a.push_back(1); a.push_back(2);
-    b.push_back(1); b.push_back(2); b.push_back(3);
+    a.push_back(1);
+    a.push_back(2);
+    b.push_back(1);
+    b.push_back(2);
+    b.push_back(3);
     EXPECT_TRUE(a.less_than(b));
     EXPECT_TRUE(a < b);
     EXPECT_FALSE(b < a);
@@ -1402,8 +1422,10 @@ TEST(FixedArrayListComparisonTest, LessThanBySize) {
 
 TEST(FixedArrayListComparisonTest, LessThanEqualIsNotLess) {
     stdx::fixed_array_list<int, 5> a, b;
-    a.push_back(1); a.push_back(2);
-    b.push_back(1); b.push_back(2);
+    a.push_back(1);
+    a.push_back(2);
+    b.push_back(1);
+    b.push_back(2);
     EXPECT_FALSE(a.less_than(b));
     EXPECT_FALSE(a < b);
 }
@@ -1480,7 +1502,6 @@ TEST(FixedArrayListComparisonTest, AllOperatorsEmptyContainers) {
     EXPECT_TRUE(a >= b);
 }
 
-
 // ===== Member Types Tests =====
 
 TEST(FixedArrayListMemberTypesTest, SizeType) {
@@ -1512,7 +1533,6 @@ TEST(FixedArrayListMemberTypesTest, ConstReferenceFromConstContainer) {
     EXPECT_EQ(7, cref);
 }
 
-
 // ===== Non-Default-Constructible Type Tests =====
 
 TEST(FixedArrayListNonDefaultConstructibleTest, EmplaceBackPoint) {
@@ -1538,7 +1558,6 @@ TEST(FixedArrayListNonDefaultConstructibleTest, MoveOnlyPushBack) {
 TEST(FixedArrayListNonDefaultConstructibleTest, MoveOnlyCopyConstructorIsDeleted) {
     static_assert(!std::is_copy_constructible<MoveOnly>::value, "");
 }
-
 
 // ===== Resize Tests =====
 

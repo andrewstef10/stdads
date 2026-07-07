@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include <stdx/array_list.h>
 #include <limits>
+#include <stdx/array_list.h>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -177,7 +177,6 @@ TEST(ArrayListConstructorTest, MoveAssignmentOverwritesExisting) {
     EXPECT_EQ(7, dst[0]);
 }
 
-
 // ===== Element Access Tests =====
 
 TEST(ArrayListElementAccessTest, AtValidIndex) {
@@ -211,8 +210,8 @@ TEST(ArrayListElementAccessTest, AtBoundaryLastElement) {
     v.push_back(1);
     v.push_back(2);
     v.push_back(3);
-    EXPECT_EQ(3, v.at(2));           // last valid index
-    EXPECT_THROW(v.at(3), std::out_of_range);  // one past end
+    EXPECT_EQ(3, v.at(2));                    // last valid index
+    EXPECT_THROW(v.at(3), std::out_of_range); // one past end
 }
 
 TEST(ArrayListElementAccessTest, AtOutOfRange) {
@@ -360,7 +359,6 @@ TEST(ArrayListElementAccessTest, FrontAndBackDistinctWhenSizeTwo) {
     EXPECT_NE(&v.front(), &v.back());
 }
 
-
 // ===== Iterator Tests =====
 
 TEST(ArrayListIteratorTest, BeginEqualsEndWhenEmpty) {
@@ -506,7 +504,6 @@ TEST(ArrayListIteratorTest, MutableIteratorAllowsWrite) {
     EXPECT_EQ(6, v[2]);
 }
 
-
 // ===== Capacity Tests =====
 
 TEST(ArrayListCapacityTest, EmptyOnDefault) {
@@ -611,7 +608,7 @@ TEST(ArrayListCapacityTest, ShrinkToFitReducesCapacityToSize) {
     stdx::array_list<int, stdx::allocator<int>, stdx::doubling_growth<>> v;
     v.push_back(1);
     v.push_back(2);
-    v.push_back(3);  // capacity doubles to 4 with doubling_growth
+    v.push_back(3); // capacity doubles to 4 with doubling_growth
     ASSERT_GE(v.capacity(), v.size());
     v.shrink_to_fit();
     EXPECT_EQ(v.size(), v.capacity());
@@ -630,7 +627,7 @@ TEST(ArrayListCapacityTest, ShrinkToFitPreservesElements) {
 }
 
 TEST(ArrayListCapacityTest, ShrinkToFitOnAlreadyFitContainer) {
-    stdx::array_list<int> v;  // exact_growth: capacity always equals size
+    stdx::array_list<int> v; // exact_growth: capacity always equals size
     v.push_back(1);
     v.push_back(2);
     ASSERT_EQ(v.size(), v.capacity());
@@ -649,7 +646,6 @@ TEST(ArrayListCapacityTest, ShrinkToFitOnEmpty) {
     EXPECT_EQ(0u, v.capacity());
 }
 
-
 // ===== Modifier Tests =====
 
 TEST(ArrayListModifierTest, PushBackCopyIncreasesSize) {
@@ -658,7 +654,7 @@ TEST(ArrayListModifierTest, PushBackCopyIncreasesSize) {
     v.push_back(val);
     EXPECT_EQ(1u, v.size());
     EXPECT_EQ(42, v[0]);
-    EXPECT_EQ(42, val);  // source unchanged
+    EXPECT_EQ(42, val); // source unchanged
 }
 
 TEST(ArrayListModifierTest, PushBackCopyMultiple) {
@@ -808,14 +804,14 @@ TEST(ArrayListModifierTest, InsertAtMiddleMove) {
 
 TEST(ArrayListModifierTest, InsertSelfReferenceWithSpareCapacity) {
     stdx::array_list<int> v;
-    v.reserve(8);            // ensure the in-place (non-reallocating) path is taken
+    v.reserve(8); // ensure the in-place (non-reallocating) path is taken
     v.push_back(10);
     v.push_back(20);
     v.push_back(30);
     // value aliases an element already in the container
     auto it = v.insert(v.begin(), v[2]);
     ASSERT_EQ(4u, v.size());
-    EXPECT_EQ(30, v[0]);     // the original v[2] value, not a shifted-over one
+    EXPECT_EQ(30, v[0]); // the original v[2] value, not a shifted-over one
     EXPECT_EQ(10, v[1]);
     EXPECT_EQ(20, v[2]);
     EXPECT_EQ(30, v[3]);
@@ -824,7 +820,7 @@ TEST(ArrayListModifierTest, InsertSelfReferenceWithSpareCapacity) {
     it = v.insert(v.begin(), std::move(v[2]));
     ASSERT_EQ(5u, v.size());
     EXPECT_EQ(20, v[0]);
-    EXPECT_EQ(30, v[1]);     // the original v[2] value, not a shifted-over one
+    EXPECT_EQ(30, v[1]); // the original v[2] value, not a shifted-over one
     EXPECT_EQ(10, v[2]);
     EXPECT_EQ(20, v[3]);
     EXPECT_EQ(30, v[4]);
@@ -927,7 +923,7 @@ TEST(ArrayListModifierTest, EraseRangePartial) {
     v.push_back(3);
     v.push_back(4);
     v.push_back(5);
-    auto it = v.erase(v.begin() + 1, v.begin() + 3);  // removes 2 and 3
+    auto it = v.erase(v.begin() + 1, v.begin() + 3); // removes 2 and 3
     ASSERT_EQ(3u, v.size());
     EXPECT_EQ(1, v[0]);
     EXPECT_EQ(4, v[1]);
@@ -941,7 +937,7 @@ TEST(ArrayListModifierTest, EraseRangeFromBegin) {
     v.push_back(2);
     v.push_back(3);
     v.push_back(4);
-    auto it = v.erase(v.begin(), v.begin() + 2);  // removes 1 and 2
+    auto it = v.erase(v.begin(), v.begin() + 2); // removes 1 and 2
     ASSERT_EQ(2u, v.size());
     EXPECT_EQ(3, v[0]);
     EXPECT_EQ(4, v[1]);
@@ -955,7 +951,7 @@ TEST(ArrayListModifierTest, EraseRangeToEnd) {
     v.push_back(2);
     v.push_back(3);
     v.push_back(4);
-    auto it = v.erase(v.begin() + 2, v.end());  // removes 3 and 4
+    auto it = v.erase(v.begin() + 2, v.end()); // removes 3 and 4
     ASSERT_EQ(2u, v.size());
     EXPECT_EQ(1, v[0]);
     EXPECT_EQ(2, v[1]);
@@ -1070,7 +1066,7 @@ TEST(ArrayListModifierTest, SwapPreservesCapacity) {
     stdx::array_list<int, stdx::allocator<int>, stdx::doubling_growth<>> a;
     a.push_back(1);
     a.push_back(2);
-    a.push_back(3);  // cap=4
+    a.push_back(3); // cap=4
 
     stdx::array_list<int, stdx::allocator<int>, stdx::doubling_growth<>> b;
     b.push_back(10); // cap=1
@@ -1099,7 +1095,6 @@ TEST(ArrayListModifierTest, SwapBothContainersUsableAfterSwap) {
     EXPECT_EQ(4, b[1]);
 }
 
-
 // ===== Comparison Tests =====
 
 TEST(ArrayListComparisonTest, EqualsTwoEmpty) {
@@ -1111,16 +1106,22 @@ TEST(ArrayListComparisonTest, EqualsTwoEmpty) {
 
 TEST(ArrayListComparisonTest, EqualsSameElements) {
     stdx::array_list<int> a, b;
-    a.push_back(1); a.push_back(2); a.push_back(3);
-    b.push_back(1); b.push_back(2); b.push_back(3);
+    a.push_back(1);
+    a.push_back(2);
+    a.push_back(3);
+    b.push_back(1);
+    b.push_back(2);
+    b.push_back(3);
     EXPECT_TRUE(a.equals(b));
     EXPECT_TRUE(a == b);
 }
 
 TEST(ArrayListComparisonTest, EqualsNotEqualElements) {
     stdx::array_list<int> a, b;
-    a.push_back(1); a.push_back(2);
-    b.push_back(1); b.push_back(3);
+    a.push_back(1);
+    a.push_back(2);
+    b.push_back(1);
+    b.push_back(3);
     EXPECT_FALSE(a.equals(b));
     EXPECT_FALSE(a == b);
     EXPECT_TRUE(a != b);
@@ -1128,16 +1129,22 @@ TEST(ArrayListComparisonTest, EqualsNotEqualElements) {
 
 TEST(ArrayListComparisonTest, EqualsNotEqualSizesASmaller) {
     stdx::array_list<int> a, b;
-    a.push_back(1); a.push_back(2);
-    b.push_back(1); b.push_back(2); b.push_back(3);
+    a.push_back(1);
+    a.push_back(2);
+    b.push_back(1);
+    b.push_back(2);
+    b.push_back(3);
     EXPECT_FALSE(a.equals(b));
     EXPECT_FALSE(a == b);
 }
 
 TEST(ArrayListComparisonTest, EqualsNotEqualSizesALarger) {
     stdx::array_list<int> a, b;
-    a.push_back(1); a.push_back(2); a.push_back(3);
-    b.push_back(1); b.push_back(2);
+    a.push_back(1);
+    a.push_back(2);
+    a.push_back(3);
+    b.push_back(1);
+    b.push_back(2);
     EXPECT_FALSE(a.equals(b));
     EXPECT_FALSE(a == b);
 }
@@ -1162,8 +1169,12 @@ TEST(ArrayListComparisonTest, EqualsSingleElement) {
 
 TEST(ArrayListComparisonTest, LessThanLexicographic) {
     stdx::array_list<int> a, b;
-    a.push_back(1); a.push_back(2); a.push_back(3);
-    b.push_back(1); b.push_back(2); b.push_back(4);
+    a.push_back(1);
+    a.push_back(2);
+    a.push_back(3);
+    b.push_back(1);
+    b.push_back(2);
+    b.push_back(4);
     EXPECT_TRUE(a.less_than(b));
     EXPECT_TRUE(a < b);
     EXPECT_FALSE(b < a);
@@ -1172,8 +1183,11 @@ TEST(ArrayListComparisonTest, LessThanLexicographic) {
 
 TEST(ArrayListComparisonTest, LessThanBySize) {
     stdx::array_list<int> a, b;
-    a.push_back(1); a.push_back(2);
-    b.push_back(1); b.push_back(2); b.push_back(3);
+    a.push_back(1);
+    a.push_back(2);
+    b.push_back(1);
+    b.push_back(2);
+    b.push_back(3);
     EXPECT_TRUE(a.less_than(b));
     EXPECT_TRUE(a < b);
     EXPECT_FALSE(b < a);
@@ -1181,8 +1195,10 @@ TEST(ArrayListComparisonTest, LessThanBySize) {
 
 TEST(ArrayListComparisonTest, LessThanEqualIsNotLess) {
     stdx::array_list<int> a, b;
-    a.push_back(1); a.push_back(2);
-    b.push_back(1); b.push_back(2);
+    a.push_back(1);
+    a.push_back(2);
+    b.push_back(1);
+    b.push_back(2);
     EXPECT_FALSE(a.less_than(b));
     EXPECT_FALSE(a < b);
 }
@@ -1259,7 +1275,6 @@ TEST(ArrayListComparisonTest, AllOperatorsEmptyContainers) {
     EXPECT_TRUE(a >= b);
 }
 
-
 // ===== Growth Policy Tests =====
 
 TEST(ArrayListGrowthPolicyTest, ExactGrowthCapacityEqualsSize) {
@@ -1274,15 +1289,15 @@ TEST(ArrayListGrowthPolicyTest, ExactGrowthCapacityEqualsSize) {
 
 TEST(ArrayListGrowthPolicyTest, DoublingGrowthCapacitySequence) {
     stdx::array_list<int, stdx::allocator<int>, stdx::doubling_growth<>> v;
-    v.push_back(1);  // req=1, cap: 0->1 = 1
+    v.push_back(1); // req=1, cap: 0->1 = 1
     EXPECT_EQ(1u, v.capacity());
-    v.push_back(2);  // req=2, cap: 1->2 = 2
+    v.push_back(2); // req=2, cap: 1->2 = 2
     EXPECT_EQ(2u, v.capacity());
-    v.push_back(3);  // req=3, cap: 2->4 = 4
+    v.push_back(3); // req=3, cap: 2->4 = 4
     EXPECT_EQ(4u, v.capacity());
-    v.push_back(4);  // req=4, fits in 4
+    v.push_back(4); // req=4, fits in 4
     EXPECT_EQ(4u, v.capacity());
-    v.push_back(5);  // req=5, cap: 4->8 = 8
+    v.push_back(5); // req=5, cap: 4->8 = 8
     EXPECT_EQ(8u, v.capacity());
 }
 
@@ -1296,7 +1311,6 @@ TEST(ArrayListGrowthPolicyTest, DoublingGrowthPreservesElements) {
         EXPECT_EQ(i * 3, v[i]);
     }
 }
-
 
 // ===== emplace_back / emplace Tests =====
 
@@ -1331,8 +1345,8 @@ struct ConstructionCounter {
 };
 
 int ConstructionCounter::direct_constructions = 0;
-int ConstructionCounter::copy_constructions   = 0;
-int ConstructionCounter::move_constructions   = 0;
+int ConstructionCounter::copy_constructions = 0;
+int ConstructionCounter::move_constructions = 0;
 
 } // namespace
 
@@ -1371,8 +1385,8 @@ TEST(ArrayListModifierTest, EmplaceBackConstructsInPlace) {
 
 TEST(ArrayListModifierTest, EmplaceBackNoCopyOrMove) {
     ConstructionCounter::direct_constructions = 0;
-    ConstructionCounter::copy_constructions   = 0;
-    ConstructionCounter::move_constructions   = 0;
+    ConstructionCounter::copy_constructions = 0;
+    ConstructionCounter::move_constructions = 0;
 
     stdx::array_list<ConstructionCounter> v;
     v.reserve(1);
@@ -1453,8 +1467,8 @@ TEST(ArrayListModifierTest, EmplaceWithMultipleArgs) {
     ASSERT_EQ(2u, v.size());
     EXPECT_EQ(10, v[0].x);
     EXPECT_EQ(20, v[0].y);
-    EXPECT_EQ(1,  v[1].x);
-    EXPECT_EQ(2,  v[1].y);
+    EXPECT_EQ(1, v[1].x);
+    EXPECT_EQ(2, v[1].y);
     EXPECT_EQ(10, it->x);
     EXPECT_EQ(20, it->y);
 }
@@ -1465,14 +1479,14 @@ TEST(ArrayListModifierTest, EmplaceConstructsInPlace) {
     auto it = v.emplace(v.begin(), 99);
     ASSERT_EQ(2u, v.size());
     EXPECT_EQ(99, v[0].value);
-    EXPECT_EQ(1,  v[1].value);
+    EXPECT_EQ(1, v[1].value);
     EXPECT_EQ(99, it->value);
 }
 
 TEST(ArrayListModifierTest, EmplaceNoCopyOrMoveIntoReservedSlot) {
     ConstructionCounter::direct_constructions = 0;
-    ConstructionCounter::copy_constructions   = 0;
-    ConstructionCounter::move_constructions   = 0;
+    ConstructionCounter::copy_constructions = 0;
+    ConstructionCounter::move_constructions = 0;
 
     stdx::array_list<ConstructionCounter> v;
     v.reserve(1);
@@ -1482,7 +1496,6 @@ TEST(ArrayListModifierTest, EmplaceNoCopyOrMoveIntoReservedSlot) {
     EXPECT_EQ(0, ConstructionCounter::copy_constructions);
     EXPECT_EQ(0, ConstructionCounter::move_constructions);
 }
-
 
 // ===== Member Types =====
 
@@ -1572,7 +1585,6 @@ TEST(ArrayListMemberTypesTest, ConstPointerFromConstData) {
     EXPECT_EQ(9, *p);
 }
 
-
 // ===== max_size =====
 
 TEST(ArrayListCapacityTest, MaxSizeIsMaxSizeT) {
@@ -1600,7 +1612,6 @@ TEST(ArrayListCapacityTest, MaxSizeGreaterThanCapacity) {
     v.reserve(1000);
     EXPECT_GT(v.max_size(), v.capacity());
 }
-
 
 // ===== Resize Tests =====
 
@@ -1711,10 +1722,10 @@ TEST(ArrayListResizeTest, ResizeLargerWhenCapacityAlreadySufficient) {
 TEST(ArrayListResizeTest, ResizeLargerToExactCapacityDoesNotReallocate) {
     stdx::array_list<int> v;
     v.push_back(1);
-    v.push_back(2);  // size=2, capacity=2
-    v.pop_back();    // size=1, capacity=2
+    v.push_back(2); // size=2, capacity=2
+    v.pop_back();   // size=1, capacity=2
     const int* dataBefore = v.data();
-    v.resize(2);     // count == capacity: must NOT reallocate
+    v.resize(2); // count == capacity: must NOT reallocate
     EXPECT_EQ(dataBefore, v.data());
     EXPECT_EQ(2u, v.size());
 }
@@ -1897,8 +1908,8 @@ TEST(ArrayListResizeTest, ResizeWithValueLargerWhenCapacityAlreadySufficient) {
 TEST(ArrayListResizeTest, ResizeWithValueLargerToExactCapacityDoesNotReallocate) {
     stdx::array_list<int> v;
     v.push_back(1);
-    v.push_back(2);  // size=2, capacity=2
-    v.pop_back();    // size=1, capacity=2
+    v.push_back(2); // size=2, capacity=2
+    v.pop_back();   // size=1, capacity=2
     const int* dataBefore = v.data();
     v.resize(2, 99); // count == capacity: must NOT reallocate
     EXPECT_EQ(dataBefore, v.data());
