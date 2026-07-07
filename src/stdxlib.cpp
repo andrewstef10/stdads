@@ -56,11 +56,11 @@ long strtol(const char* str, int base, char** endptr) {
     long result = 0L;
     bool valid = false;
     while (*str != '\0') {
-        int digit = stdx::char_to_digit(*str, base);
-        if (digit < 0) {
+        const int DIGIT = stdx::char_to_digit(*str, base);
+        if (DIGIT < 0) {
             break;
         }
-        result = (result * base) + digit;
+        result = (result * base) + DIGIT;
         valid = true;
         ++str;
     }
