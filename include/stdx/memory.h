@@ -5,10 +5,33 @@
 #include <memory>
 #include <new>
 #include <stdexcept>
+#include <type_traits>
 
 #include <stdx/equatable.h>
 
 namespace stdx {
+namespace internal {
+
+/// @brief C++11 substitute for C++17's std::allocator_traits<Allocator>::is_always_equal. Yields
+///        Allocator::is_always_equal when that member type exists; otherwise falls back to
+///        std::is_empty<Allocator>, the same default C++17 specifies.
+/// @tparam Allocator The allocator type to inspect.
+template <typename Allocator>
+class alloc_is_always_equal {
+    /// @brief Selected via SFINAE when Allocator declares a member type is_always_equal.
+    template <typename A>
+    static typename A::is_always_equal test(int);
+
+    /// @brief Fallback: a stateless (empty) allocator is always equal to any other instance.
+    template <typename A>
+    static std::is_empty<A> test(...);
+
+  public:
+    /// @brief std::true_type / std::false_type: whether any two Allocator instances compare equal.
+    using type = decltype(test<Allocator>(0));
+};
+
+} // namespace internal
 
 /// @brief Growth policy that returns the exact requested capacity.
 /// Use this policy when you want the array_list to grow to exactly the size needed,
@@ -19,12 +42,10 @@ namespace stdx {
 template <typename size_type = std::size_t>
 struct exact_growth {
     /// @brief Returns the required capacity without any growth factor.
-    /// @param current_capacity The current capacity (ignored by this policy).
-    /// @param required_capacity The minimum capacity needed to accommodate new elements.
+    /// @param currentCapacity The current capacity (ignored by this policy).
+    /// @param requiredCapacity The minimum capacity needed to accommodate new elements.
     /// @return The required_capacity unchanged, ensuring no overallocation.
-    size_type operator()(size_type /*current_capacity*/, size_type required_capacity) const {
-        return required_capacity;
-    }
+    size_type operator()(size_type /*currentCapacity*/, size_type requiredCapacity) const { return requiredCapacity; }
 };
 
 /// @brief Growth policy that doubles capacity each time it needs to grow
@@ -36,18 +57,18 @@ struct exact_growth {
 template <typename size_type = std::size_t>
 struct doubling_growth {
     /// @brief Computes new capacity by doubling until it meets or exceeds required
-    /// @param current_capacity The current allocated capacity
-    /// @param required_capacity The minimum capacity needed for new elements
+    /// @param currentCapacity The current allocated capacity
+    /// @param requiredCapacity The minimum capacity needed for new elements
     /// @return size_type The new capacity which will always be >= required_capacity
-    size_type operator()(size_type current_capacity, size_type required_capacity) const {
-        if (current_capacity < required_capacity) {
-            current_capacity = current_capacity == 0 ? 1 : current_capacity * 2;
-            while (current_capacity < required_capacity) {
-                current_capacity *= 2;
+    size_type operator()(size_type currentCapacity, size_type requiredCapacity) const {
+        if (currentCapacity < requiredCapacity) {
+            currentCapacity = currentCapacity == 0 ? 1 : currentCapacity * 2;
+            while (currentCapacity < requiredCapacity) {
+                currentCapacity *= 2;
             }
         }
 
-        return current_capacity;
+        return currentCapacity;
     }
 };
 
@@ -141,9 +162,9 @@ class allocator {
 
     /// @brief Copy constructor
     /// @tparam U Other allocator's type
-    /// @param
+    /// @param /*unused*/
     template <typename U>
-    allocator(const allocator<U>&) noexcept {}
+    allocator(const allocator<U>& /*unused*/) noexcept {}
 
     /// @brief Allocates n * sizeof(T) bytes of uninitialized storage by calling ::operator new(std::size_t) or
     /// ::operator new(std::size_t, std::align_val_t)(since C++17), but it is unspecified when and how this function is
@@ -170,7 +191,7 @@ class allocator {
     /// @param
     /// @return true always because allocators of any type T are equal
     template <typename U>
-    bool constexpr equals(const allocator<U>&) const noexcept {
+    bool constexpr equals(const allocator<U>& /*unused*/) const noexcept {
         return true;
     }
 
@@ -203,7 +224,7 @@ inline T* allocator<T>::allocate(std::size_t n) {
 }
 
 template <typename T>
-inline void allocator<T>::deallocate(T* ptr, std::size_t) noexcept {
+inline void allocator<T>::deallocate(T* ptr, std::size_t /*unused*/) noexcept {
     // #if __cpp_sized_deallocation
     //         ::operator delete(ptr, n * sizeof(T));
     // #else
@@ -213,7 +234,7 @@ inline void allocator<T>::deallocate(T* ptr, std::size_t) noexcept {
 }
 
 template <typename T>
-inline constexpr std::size_t allocator<T>::max_size() const noexcept {
+constexpr std::size_t allocator<T>::max_size() const noexcept {
     return static_cast<std::size_t>(-1) / sizeof(T);
 }
 

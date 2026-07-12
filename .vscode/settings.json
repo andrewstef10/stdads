@@ -1,7 +1,19 @@
 {
     "cSpell.words": [
+        "asan",
+        "constexpr",
+        "CRTP",
+        "CTAD",
+        "ctest",
+        "Doxyfile",
+        "MSVC",
+        "NOLINTNEXTLINE",
+        "Pocma",
+        "POCMA",
+        "reimplementation",
         "stdx",
-        "Doxyfile"
+        "Wextra",
+        "Wpedantic"
     ],
     "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
     "editor.formatOnSave": true,

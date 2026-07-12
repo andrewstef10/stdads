@@ -22,14 +22,6 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
                    public stdx::equatable<array_list<T, Allocator, GrowthPolicy>>,
                    public stdx::comparable<array_list<T, Allocator, GrowthPolicy>> {
   public:
-    friend stdx::container<array_list, T>;
-    friend stdx::contiguous_container<array_list, T>;
-
-    using value_type = typename container<array_list, T>::value_type;
-    using size_type = typename container<array_list, T>::size_type;
-    using reference = typename container<array_list, T>::reference;
-    using const_reference = typename container<array_list, T>::const_reference;
-
     using iterator = typename contiguous_container<array_list, T>::iterator;
     using const_iterator = typename contiguous_container<array_list, T>::const_iterator;
     using reverse_iterator = typename contiguous_container<array_list, T>::reverse_iterator;
@@ -56,7 +48,7 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     /// @details Time:  O(1)
     ///          Space: O(1)
     /// @param other Container to move from.
-    array_list(array_list&& other);
+    array_list(array_list&& other) noexcept;
 
     /// @brief Destructor. Destroys all elements and releases allocated memory.
     /// @details Time:  O(n), where n = size()
@@ -73,9 +65,13 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     /// @brief Move assignment operator. Replaces the contents by acquiring the elements of `other`.
     /// @details Time:  O(1) when allocators are equal or POCMA is true; O(n) otherwise, where n = other.size()
     ///          Space: O(1)
+    ///          noexcept when the buffer-steal path is guaranteed (POCMA, or an always-equal allocator type);
+    ///          the element-wise fallback may allocate and move elements, either of which can throw.
     /// @param other Container to move from.
     /// @return Reference to this container.
-    array_list& operator=(array_list&& other);
+    array_list& operator=(array_list&& other) noexcept(
+        std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value ||
+        internal::alloc_is_always_equal<Allocator>::type::value);
 
     /// @brief Returns the allocator associated with the container.
     /// @details Time:  O(1)
@@ -101,11 +97,17 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
 
     // ===== Capacity =====
 
+    /// @brief Returns the number of elements in the container.
+    /// @details Time:  O(1)
+    ///          Space: O(1)
+    /// @return The number of elements in the container.
+    std::size_t size() const noexcept { return m_size; }
+
     /// @brief Returns the number of elements the container can hold without reallocating.
     /// @details Time:  O(1)
     ///          Space: O(1)
     /// @return Current allocated capacity in number of elements.
-    size_type capacity() const { return m_capacity; }
+    std::size_t capacity() const { return m_capacity; }
 
     /// @brief Requests that the array_list capacity be at least enough to contain `n` elements.
     /// @details Time:  O(n) — moves all existing elements if reallocation occurs
@@ -115,7 +117,7 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     ///          cause a reallocation and the array_list capacity is not affected. Invalidates all iterators and
     ///          references if reallocation occurs.
     /// @param n Minimum required capacity.
-    void reserve(size_type n);
+    void reserve(std::size_t n);
 
     /// @brief Requests the removal of unused capacity by reallocating the buffer to exactly size() elements. No-op if
     /// capacity() == size().
@@ -131,7 +133,7 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     ///          Space: O(1) amortized — O(n) on reallocation
     ///          Invalidates all iterators and references if reallocation occurs.
     /// @param val Value to copy-construct into the new element.
-    void push_back(const_reference val) { return emplace_back(val); }
+    void push_back(const T& val) { return emplace_back(val); }
 
     /// @brief Appends `val` to the end of the container by moving it. Reallocates if size() == capacity().
     /// @details Time:  O(1) amortized — O(n) on reallocation
@@ -161,7 +163,7 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     /// @param pos Iterator before which the element is inserted. May be end().
     /// @param value Value to copy-construct into the new element.
     /// @return Iterator to the inserted element.
-    iterator insert(const_iterator pos, const_reference value) { return emplace(pos, value); }
+    iterator insert(const_iterator pos, const T& value) { return emplace(pos, value); }
 
     /// @brief Inserts `value` before `pos` by moving it. Reallocates if size() == capacity().
     /// @details Time:  O(n) — shifts elements after pos to make room
@@ -192,7 +194,7 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     ///          Invalidates all iterators and references if reallocation occurs; if count < size(), invalidates
     ///          iterators from count onward.
     /// @param count new size of the container
-    void resize(size_type count) { resize_impl(count); }
+    void resize(std::size_t count) { resize_impl(count); }
 
     /// @brief Resizes the container to contain count elements.
     /// @details Time:  O(n), where n is the difference between the current size and count; O(n) where n is the current
@@ -205,24 +207,33 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     ///          iterators from count onward.
     /// @param count new size of the container
     /// @param value the value to initialize the new elements with
-    void resize(size_type count, const_reference value) { resize_impl(count, value); }
+    void resize(std::size_t count, const T& value) { resize_impl(count, value); }
 
     /// @brief Swaps the contents of this container with `other`. Iterators remain valid but now refer to the other
     /// container.
     /// @details Time:  O(1)
     ///          Space: O(1)
+    ///          noexcept when POCS is true or the allocator type is always-equal; otherwise swapping containers
+    ///          with unequal allocators is undefined behavior, matching std::vector.
     /// @param other Container to swap with.
-    void swap(array_list& other);
+    void swap(array_list& other) noexcept(std::allocator_traits<Allocator>::propagate_on_container_swap::value ||
+                                          internal::alloc_is_always_equal<Allocator>::type::value);
+
+    /// @brief Destroys all elements. size() becomes zero; capacity() is unchanged.
+    /// @details Time:  O(n) — destructs each element
+    ///          Space: O(1)
+    ///          Invalidates all iterators and references to elements.
+    void clear();
 
   private:
     /// @brief Current number of elements stored in the container
-    size_type m_size;
+    std::size_t m_size;
 
     /// @brief Pointer to underlying array of elements
     T* m_data;
 
     /// @brief Size of the allocated storage capacity
-    size_type m_capacity;
+    std::size_t m_capacity;
 
     /// @brief Allocator for this array_list
     allocator_type m_alloc;
@@ -251,8 +262,8 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     ///          Uses std::move_if_noexcept, so elements are copied if T's move constructor may throw.
     ///          Updates m_data and m_capacity; m_size is unchanged.
     ///          Invalidates all iterators and references.
-    /// @param new_capacity Target size of the new buffer. Must be >= size().
-    void realloc(size_type new_capacity);
+    /// @param newCapacity Target size of the new buffer. Must be >= size().
+    void realloc(std::size_t newCapacity);
 
     /// @brief Reallocating insert: grows the buffer and places a new element at `index` in a single pass.
     /// @details Time:  O(n) — allocates a new buffer and moves all existing elements exactly once
@@ -264,7 +275,7 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     /// @param args  Arguments forwarded to T's constructor for the new element.
     /// @return Iterator to the newly constructed element.
     template <typename... Args>
-    iterator emplace_realloc(size_type index, Args&&... args);
+    iterator emplace_realloc(std::size_t index, Args&&... args);
 
     /// @brief Resizes the container to contain count elements.
     /// @details Time:  O(n), where n is the difference between the current size and count; O(n) where n is the current
@@ -278,7 +289,7 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     /// @param count new size of the container
     /// @param value the value to initialize the new elements with; leave blank for default initialization;
     template <typename... Args>
-    void resize_impl(size_type count, Args&&... args);
+    void resize_impl(std::size_t count, Args&&... args);
 };
 
 // ===== Inline array_list Implementation =====
@@ -289,23 +300,32 @@ inline array_list<T, Allocator, GrowthPolicy>::array_list()
 
 template <typename T, typename Allocator, typename GrowthPolicy>
 inline array_list<T, Allocator, GrowthPolicy>::array_list(const array_list<T, Allocator, GrowthPolicy>& other)
-    : contiguous_container<array_list, T>(other), m_size(0), m_data(nullptr), m_capacity(0), m_alloc(other.m_alloc),
-      m_growth(other.m_growth) {
+    : contiguous_container<array_list, T>(other)
+    , m_size(0)
+    , m_data(nullptr)
+    , m_capacity(0)
+    , m_alloc(other.m_alloc)
+    , m_growth(other.m_growth) {
+
     // Grow capacity to at least the size of other if needed
     if (m_capacity < other.m_size) {
         realloc(m_growth(m_capacity, other.m_size));
     }
 
     // Copy construct the all elements in other
-    for (; m_size < other.m_size; ++m_size) {
-        construct(m_data + m_size, other.m_data[m_size]);
-    }
+    internal::contiguous_container::construct_copy(m_alloc, m_data, other.m_data, other.m_size);
+    m_size = other.m_size;
 }
 
 template <typename T, typename Allocator, typename GrowthPolicy>
-inline array_list<T, Allocator, GrowthPolicy>::array_list(array_list<T, Allocator, GrowthPolicy>&& other)
-    : contiguous_container<array_list, T>(std::move(other)), m_size(other.m_size), m_data(other.m_data),
-      m_capacity(other.m_capacity), m_alloc(std::move(other.m_alloc)), m_growth(std::move(other.m_growth)) {
+inline array_list<T, Allocator, GrowthPolicy>::array_list(array_list<T, Allocator, GrowthPolicy>&& other) noexcept
+    : contiguous_container<array_list, T>(std::move(other))
+    , m_size(other.m_size)
+    , m_data(other.m_data)
+    , m_capacity(other.m_capacity)
+    , m_alloc(std::move(other.m_alloc))
+    , m_growth(std::move(other.m_growth)) {
+
     other.m_size = 0;
     other.m_data = nullptr;
     other.m_capacity = 0;
@@ -313,7 +333,7 @@ inline array_list<T, Allocator, GrowthPolicy>::array_list(array_list<T, Allocato
 
 template <typename T, typename Allocator, typename GrowthPolicy>
 inline array_list<T, Allocator, GrowthPolicy>::~array_list() {
-    this->clear();
+    clear();
     std::allocator_traits<Allocator>::deallocate(m_alloc, m_data, m_capacity);
 }
 
@@ -327,7 +347,7 @@ array_list<T, Allocator, GrowthPolicy>::operator=(const array_list<T, Allocator,
     if (std::allocator_traits<Allocator>::propagate_on_container_copy_assignment::value) {
         // Allocator should be copied. Need to deallocate our own memory and reallocate with a copy of other's
         // allocator.
-        this->clear();
+        clear();
         std::allocator_traits<Allocator>::deallocate(m_alloc, m_data, m_capacity);
         m_capacity = 0;
         m_alloc = other.m_alloc;
@@ -339,31 +359,7 @@ array_list<T, Allocator, GrowthPolicy>::operator=(const array_list<T, Allocator,
     }
 
     // Assign elements from other
-    if (m_size < other.m_size) // this container contains less elements than other
-    {
-        // Copy assign all elements from other up to current size
-        size_type i = 0U;
-        for (; i < m_size; ++i) {
-            m_data[i] = other.m_data[i];
-        }
-
-        // Copy construct remaining elements from other
-        for (; i < other.m_size; ++i) {
-            construct(m_data + i, other.m_data[i]);
-        }
-    } else // this container contains the same or more elements than other
-    {
-        // Copy assign all elements from other
-        size_type i = 0U;
-        for (; i < other.m_size; ++i) {
-            m_data[i] = other.m_data[i];
-        }
-
-        // Remove remaining elements in this
-        for (; i < m_size; ++i) {
-            destroy(m_data + i);
-        }
-    }
+    internal::contiguous_container::assign_copy(m_alloc, m_data, m_size, other.m_data, other.m_size);
 
     m_size = other.m_size;
     return *this;
@@ -371,7 +367,9 @@ array_list<T, Allocator, GrowthPolicy>::operator=(const array_list<T, Allocator,
 
 template <typename T, typename Allocator, typename GrowthPolicy>
 inline array_list<T, Allocator, GrowthPolicy>&
-array_list<T, Allocator, GrowthPolicy>::operator=(array_list<T, Allocator, GrowthPolicy>&& other) {
+array_list<T, Allocator, GrowthPolicy>::operator=(array_list<T, Allocator, GrowthPolicy>&& other) noexcept(
+    std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value ||
+    internal::alloc_is_always_equal<Allocator>::type::value) {
     if (this == &other) {
         return *this;
     }
@@ -380,7 +378,7 @@ array_list<T, Allocator, GrowthPolicy>::operator=(array_list<T, Allocator, Growt
     if (POCMA || m_alloc == other.m_alloc) {
         // Either our allocator and the memory our allocator allocates need to stay together (if POCMA) OR allocators
         // are equal Its safe to steal other's buffer and deallocate our own
-        this->clear();
+        clear();
         std::allocator_traits<Allocator>::deallocate(m_alloc, m_data, m_capacity);
 
         if (POCMA) {
@@ -389,6 +387,8 @@ array_list<T, Allocator, GrowthPolicy>::operator=(array_list<T, Allocator, Growt
 
         m_data = other.m_data;
         m_capacity = other.m_capacity;
+        other.m_data = nullptr;
+        other.m_capacity = 0;
     } else {
         // POCMA false AND allocators are not equal
         // We must perform element-wise move into own storage, O(n)
@@ -396,43 +396,18 @@ array_list<T, Allocator, GrowthPolicy>::operator=(array_list<T, Allocator, Growt
             realloc(m_growth(m_capacity, other.m_size));
         }
 
-        // Assign elements from other
-        if (m_size < other.m_size) // this container contains less elements than other
-        {
-            // Move assign all elements from other up to current size
-            size_type i = 0U;
-            for (; i < m_size; ++i) {
-                m_data[i] = std::move(other.m_data[i]);
-            }
-
-            // Move construct remaining elements from other
-            for (; i < other.m_size; ++i) {
-                construct(m_data + i, std::move(other.m_data[i]));
-            }
-        } else // this container contains the same or more elements than other
-        {
-            // Move assign all elements from other
-            size_type i = 0U;
-            for (; i < other.m_size; ++i) {
-                m_data[i] = std::move(other.m_data[i]);
-            }
-
-            // Remove remaining elements in this
-            for (; i < m_size; ++i) {
-                destroy(m_data + i);
-            }
-        }
+        // Assign elements from other. Other keeps its (now empty) buffer: only its own
+        // allocator may deallocate it, which happens in other's destructor.
+        internal::contiguous_container::assign_move(m_alloc, m_data, m_size, other.m_alloc, other.m_data, other.m_size);
     }
 
     m_size = other.m_size;
     other.m_size = 0;
-    other.m_data = nullptr;
-    other.m_capacity = 0;
     return *this;
 }
 
 template <typename T, typename Allocator, typename GrowthPolicy>
-inline void array_list<T, Allocator, GrowthPolicy>::reserve(size_type n) {
+inline void array_list<T, Allocator, GrowthPolicy>::reserve(std::size_t n) {
     if (m_capacity < n) {
         realloc(m_growth(m_capacity, n));
     }
@@ -465,36 +440,33 @@ template <typename T, typename Allocator, typename GrowthPolicy>
 template <typename... Args>
 inline typename array_list<T, Allocator, GrowthPolicy>::iterator
 array_list<T, Allocator, GrowthPolicy>::emplace(const_iterator pos, Args&&... args) {
+    const std::size_t INDEX = static_cast<std::size_t>(pos - m_data);
     if (m_size == m_capacity) {
-        return emplace_realloc(static_cast<size_type>(pos - m_data), std::forward<Args>(args)...);
+        return emplace_realloc(INDEX, std::forward<Args>(args)...);
     }
-    return this->emplace_inplace(static_cast<size_type>(pos - m_data), std::forward<Args>(args)...);
+
+    return internal::contiguous_container::emplace_at(m_alloc, m_data, m_size++, INDEX, std::forward<Args>(args)...);
 }
 
 template <typename T, typename Allocator, typename GrowthPolicy>
 template <typename... Args>
-inline void array_list<T, Allocator, GrowthPolicy>::resize_impl(size_type count, Args&&... args) {
-    if (m_size < count) {
-        if (count > m_capacity) {
-            realloc(m_growth(m_capacity, count));
-        }
-
-        for (; m_size < count; ++m_size) {
-            construct(m_data + m_size, std::forward<Args>(args)...);
-        }
-    } else {
-        while (m_size > count) {
-            pop_back();
-        }
+inline void array_list<T, Allocator, GrowthPolicy>::resize_impl(std::size_t count, Args&&... args) {
+    if (count > m_capacity) {
+        realloc(m_growth(m_capacity, count));
     }
+
+    internal::contiguous_container::resize(m_alloc, data(), m_size, count, std::forward<Args>(args)...);
+    m_size = count;
 }
 
 template <typename T, typename Allocator, typename GrowthPolicy>
-inline void array_list<T, Allocator, GrowthPolicy>::swap(array_list<T, Allocator, GrowthPolicy>& other) {
+inline void array_list<T, Allocator, GrowthPolicy>::swap(array_list<T, Allocator, GrowthPolicy>& other) noexcept(
+    std::allocator_traits<Allocator>::propagate_on_container_swap::value ||
+    internal::alloc_is_always_equal<Allocator>::type::value) {
     // Always swap storage: each pointer/size/capacity pair must travel together.
     T* tempData = other.m_data;
-    size_type tempSize = other.m_size;
-    size_type tempCapacity = other.m_capacity;
+    std::size_t tempSize = other.m_size;
+    std::size_t tempCapacity = other.m_capacity;
 
     other.m_data = m_data;
     other.m_size = m_size;
@@ -513,8 +485,8 @@ inline void array_list<T, Allocator, GrowthPolicy>::swap(array_list<T, Allocator
 }
 
 template <typename T, typename Allocator, typename GrowthPolicy>
-inline void array_list<T, Allocator, GrowthPolicy>::realloc(size_type new_capacity) {
-    T* newData = std::allocator_traits<Allocator>::allocate(m_alloc, new_capacity);
+inline void array_list<T, Allocator, GrowthPolicy>::realloc(std::size_t newCapacity) {
+    T* newData = std::allocator_traits<Allocator>::allocate(m_alloc, newCapacity);
 
     // Copy container contents to new memory (newData)
     for (size_t i = 0; i < m_size; ++i) {
@@ -525,14 +497,14 @@ inline void array_list<T, Allocator, GrowthPolicy>::realloc(size_type new_capaci
     // Deallocate old memory (m_data) and update members
     std::allocator_traits<Allocator>::deallocate(m_alloc, m_data, m_capacity);
     m_data = newData;
-    m_capacity = new_capacity;
+    m_capacity = newCapacity;
 }
 
 template <typename T, typename Allocator, typename GrowthPolicy>
 template <typename... Args>
 inline typename array_list<T, Allocator, GrowthPolicy>::iterator
-array_list<T, Allocator, GrowthPolicy>::emplace_realloc(size_type index, Args&&... args) {
-    const size_type NEW_CAPACITY = m_growth(m_capacity, m_size + 1);
+array_list<T, Allocator, GrowthPolicy>::emplace_realloc(std::size_t index, Args&&... args) {
+    const std::size_t NEW_CAPACITY = m_growth(m_capacity, m_size + 1);
     T* newData = std::allocator_traits<Allocator>::allocate(m_alloc, NEW_CAPACITY);
 
     // Construct the new element first so a throwing T constructor leaves *this unchanged.
@@ -544,7 +516,7 @@ array_list<T, Allocator, GrowthPolicy>::emplace_realloc(size_type index, Args&&.
     }
 
     // Move existing elements into the new buffer around the gap; each element is moved exactly once.
-    size_type i = 0;
+    std::size_t i = 0;
     for (; i < index; ++i) {
         construct(newData + i, std::move_if_noexcept(m_data[i]));
         destroy(m_data + i);
@@ -560,6 +532,13 @@ array_list<T, Allocator, GrowthPolicy>::emplace_realloc(size_type index, Args&&.
     m_capacity = NEW_CAPACITY;
     ++m_size;
     return iterator(m_data + index);
+}
+
+template <typename T, typename Allocator, typename GrowthPolicy>
+inline void array_list<T, Allocator, GrowthPolicy>::clear() {
+    while (m_size > 0) {
+        pop_back();
+    }
 }
 } // namespace stdx
 

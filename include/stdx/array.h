@@ -2,9 +2,9 @@
 #define ARRAY_H
 
 #include <cstddef>
-#include <stdexcept>
 #include <utility>
 
+#include <stdx/internal/internal_contiguous_container.h>
 #include <stdx/iterator.h>
 
 namespace stdx {
@@ -39,8 +39,8 @@ struct array {
     /// @param pos Position of the element to return.
     /// @return Reference to the requested element.
     /// @exception std::out_of_range if pos is out of range (pos >= size()).
-    T& at(std::size_t pos);
-    const T& at(std::size_t pos) const;
+    T& at(std::size_t pos) { return internal::contiguous_container::at(elems, N, pos); }
+    const T& at(std::size_t pos) const { return internal::contiguous_container::at(elems, N, pos); }
 
     /// @brief Returns a reference to the element at specified location pos, without bounds checking.
     /// @param index Position of the element to return.
@@ -192,22 +192,6 @@ array<T, N + M> operator+(const array<T, N>& lhs, const array<T, M>& rhs);
 // ===== Inline Array Implementation =====
 
 template <typename T, std::size_t N>
-inline T& array<T, N>::at(std::size_t pos) {
-    if (pos >= N) {
-        throw std::out_of_range("Index outside the bounds of the array");
-    }
-    return elems[pos];
-}
-
-template <typename T, std::size_t N>
-inline const T& array<T, N>::at(std::size_t pos) const {
-    if (pos >= N) {
-        throw std::out_of_range("Index outside the bounds of the array");
-    }
-    return elems[pos];
-}
-
-template <typename T, std::size_t N>
 inline void array<T, N>::fill(const T& value) {
     for (std::size_t i = 0; i < N; ++i) {
         elems[i] = value;
@@ -224,23 +208,12 @@ array<T, N>::swap(array<T, N>& other) noexcept(noexcept(std::swap(std::declval<T
 
 template <typename T, std::size_t N>
 inline bool array<T, N>::equals(const array& other) const {
-    bool equals = true;
-    for (std::size_t i = 0; equals && i < N; ++i) {
-        equals = elems[i] == other.elems[i];
-    }
-    return equals;
+    return internal::contiguous_container::equals(elems, other.elems, N);
 }
 
 template <typename T, std::size_t N>
 inline bool array<T, N>::less_than(const array& other) const {
-    bool lessThan = false;
-    for (std::size_t i = 0; i < N; ++i) {
-        if (!(elems[i] == other.elems[i])) {
-            lessThan = elems[i] < other.elems[i];
-            break;
-        }
-    }
-    return lessThan;
+    return internal::contiguous_container::less_than(elems, other.elems, N, N);
 }
 
 template <typename T, std::size_t N, std::size_t M>

@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <gtest/gtest.h>
 #include <limits>
 #include <stdx/array_list.h>
@@ -1956,4 +1957,225 @@ TEST(ArrayListResizeTest, ResizeWithValueSmallerThenLargerUsesValue) {
     EXPECT_EQ(10, v[0]);
     EXPECT_EQ(55, v[1]);
     EXPECT_EQ(55, v[2]);
+}
+
+// ===== Move Assignment Leak Tests =====
+
+namespace {
+
+/// Stateful allocator for exercising the element-wise move assignment path. Each default-constructed
+/// instance gets a unique id, so two default-constructed containers compare unequal and (with POCMA
+/// false) move assignment cannot steal the buffer. Tracks outstanding allocations across all
+/// instances of an instantiation to expose leaked buffers.
+template <typename T, bool POCMA>
+struct tracking_allocator {
+    using value_type = T;
+    using is_always_equal = std::false_type;
+    using propagate_on_container_copy_assignment = std::false_type;
+    using propagate_on_container_move_assignment = std::integral_constant<bool, POCMA>;
+    using propagate_on_container_swap = std::false_type;
+
+    template <typename U>
+    struct rebind {
+        using other = tracking_allocator<U, POCMA>;
+    };
+
+    /// Allocations not yet deallocated, across all instances of this instantiation
+    static int live_allocations;
+
+    int id;
+
+    tracking_allocator() : id(next_id()++) {}
+    tracking_allocator(const tracking_allocator&) = default;
+    tracking_allocator& operator=(const tracking_allocator&) = default;
+    template <typename U>
+    tracking_allocator(const tracking_allocator<U, POCMA>& other) : id(other.id) {}
+
+    T* allocate(std::size_t n) {
+        ++live_allocations;
+        return static_cast<T*>(::operator new(n * sizeof(T)));
+    }
+
+    void deallocate(T* ptr, std::size_t) noexcept {
+        if (ptr != nullptr) {
+            --live_allocations;
+        }
+        ::operator delete(ptr);
+    }
+
+    friend bool operator==(const tracking_allocator& lhs, const tracking_allocator& rhs) noexcept {
+        return lhs.id == rhs.id;
+    }
+    friend bool operator!=(const tracking_allocator& lhs, const tracking_allocator& rhs) noexcept {
+        return lhs.id != rhs.id;
+    }
+
+  private:
+    static int& next_id() {
+        static int id = 0;
+        return id;
+    }
+};
+
+template <typename T, bool POCMA>
+int tracking_allocator<T, POCMA>::live_allocations = 0;
+
+/// Element that bumps a caller-owned counter on destruction. Moved-from objects still count:
+/// every construction must be balanced by exactly one destruction.
+struct CountedElement {
+    int* count;
+    explicit CountedElement(int* c) : count(c) {}
+    CountedElement(const CountedElement&) = default;
+    CountedElement& operator=(const CountedElement&) = default;
+    ~CountedElement() {
+        if (count)
+            ++(*count);
+    }
+};
+
+} // namespace
+
+TEST(ArrayListMoveAssignmentTest, UnequalAllocatorsDoesNotLeakBuffer) {
+    using alloc = tracking_allocator<int, false>;
+    using list = stdx::array_list<int, alloc>;
+    alloc::live_allocations = 0;
+    {
+        list src;
+        src.push_back(1);
+        src.push_back(2);
+        src.push_back(3);
+
+        list dst;
+        dst.push_back(9);
+
+        // Unequal allocators + POCMA false force the element-wise path
+        ASSERT_TRUE(src.get_allocator() != dst.get_allocator());
+
+        dst = std::move(src);
+        ASSERT_EQ(3u, dst.size());
+        EXPECT_EQ(1, dst[0]);
+        EXPECT_EQ(2, dst[1]);
+        EXPECT_EQ(3, dst[2]);
+        EXPECT_TRUE(src.empty());
+    }
+    // Every buffer allocated by either container must have been deallocated
+    EXPECT_EQ(0, alloc::live_allocations);
+}
+
+TEST(ArrayListMoveAssignmentTest, UnequalAllocatorsDestroysSourceElements) {
+    using list = stdx::array_list<CountedElement, tracking_allocator<CountedElement, false>>;
+    int srcCount = 0;
+    int dstCount = 0;
+    {
+        list src;
+        src.reserve(4); // avoid growth reallocs, which destroy elements and would inflate srcCount
+        src.emplace_back(&srcCount);
+        src.emplace_back(&srcCount);
+        src.emplace_back(&srcCount);
+
+        list dst;
+        dst.reserve(4); // avoid a realloc during assignment so dstCount stays untouched
+        dst.emplace_back(&dstCount);
+
+        ASSERT_TRUE(src.get_allocator() != dst.get_allocator());
+        ASSERT_EQ(0, srcCount);
+        ASSERT_EQ(0, dstCount);
+
+        dst = std::move(src);
+        // src's moved-from elements must be destroyed as part of the move, not leaked
+        EXPECT_EQ(3, srcCount);
+        // dst's element was assigned over, not destroyed
+        EXPECT_EQ(0, dstCount);
+        ASSERT_EQ(3u, dst.size());
+
+        // Detach dst's elements so the scope exit doesn't add to srcCount
+        for (auto& e : dst) {
+            e.count = nullptr;
+        }
+    }
+    EXPECT_EQ(3, srcCount);
+    EXPECT_EQ(0, dstCount);
+}
+
+TEST(ArrayListMoveAssignmentTest, UnequalAllocatorsDestroysSourceAndExcessDestinationElements) {
+    using list = stdx::array_list<CountedElement, tracking_allocator<CountedElement, false>>;
+    int srcCount = 0;
+    int dstCount = 0;
+    {
+        list src;
+        src.reserve(4); // avoid growth reallocs, which destroy elements and would inflate srcCount
+        src.emplace_back(&srcCount);
+
+        list dst;
+        dst.reserve(4);
+        dst.emplace_back(&dstCount);
+        dst.emplace_back(&dstCount);
+        dst.emplace_back(&dstCount);
+
+        ASSERT_TRUE(src.get_allocator() != dst.get_allocator());
+        ASSERT_EQ(0, srcCount);
+        ASSERT_EQ(0, dstCount);
+
+        dst = std::move(src);
+        // src's moved-from element must be destroyed as part of the move
+        EXPECT_EQ(1, srcCount);
+        // dst's two excess elements beyond src's size must be destroyed
+        EXPECT_EQ(2, dstCount);
+        ASSERT_EQ(1u, dst.size());
+
+        for (auto& e : dst) {
+            e.count = nullptr;
+        }
+    }
+    EXPECT_EQ(1, srcCount);
+    EXPECT_EQ(2, dstCount);
+}
+
+TEST(ArrayListMoveAssignmentTest, EqualAllocatorsStealBufferWithoutLeak) {
+    using alloc = tracking_allocator<int, false>;
+    using list = stdx::array_list<int, alloc>;
+    alloc::live_allocations = 0;
+    {
+        list src;
+        src.push_back(1);
+        src.push_back(2);
+        src.push_back(3);
+
+        list dst(src); // copy constructor copies src's allocator, so allocators compare equal
+        dst.push_back(4);
+
+        ASSERT_TRUE(src.get_allocator() == dst.get_allocator());
+
+        dst = std::move(src);
+        ASSERT_EQ(3u, dst.size());
+        EXPECT_EQ(1, dst[0]);
+        EXPECT_EQ(2, dst[1]);
+        EXPECT_EQ(3, dst[2]);
+    }
+    EXPECT_EQ(0, alloc::live_allocations);
+}
+
+TEST(ArrayListMoveAssignmentTest, PocmaPropagatesAllocatorWithoutLeak) {
+    using alloc = tracking_allocator<int, true>;
+    using list = stdx::array_list<int, alloc>;
+    alloc::live_allocations = 0;
+    {
+        list src;
+        src.push_back(1);
+        src.push_back(2);
+
+        list dst;
+        dst.push_back(9);
+
+        const int SRC_ID = src.get_allocator().id;
+        ASSERT_TRUE(src.get_allocator() != dst.get_allocator());
+
+        dst = std::move(src);
+        // POCMA true: dst must adopt src's allocator along with its buffer
+        EXPECT_EQ(SRC_ID, dst.get_allocator().id);
+        ASSERT_EQ(2u, dst.size());
+        EXPECT_EQ(1, dst[0]);
+        EXPECT_EQ(2, dst[1]);
+    }
+    EXPECT_EQ(0, alloc::live_allocations);
 }

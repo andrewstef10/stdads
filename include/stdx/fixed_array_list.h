@@ -1,12 +1,15 @@
 #ifndef FIXED_ARRAY_LIST_H
 #define FIXED_ARRAY_LIST_H
 
+#include "stdx/internal/internal_contiguous_container.h"
 #include <stdx/comparable.h>
 #include <stdx/contiguous_container.h>
 #include <stdx/equatable.h>
+#include <stdx/memory.h>
 
 #include <cstddef>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 
 namespace stdx {
@@ -24,9 +27,6 @@ class fixed_array_list : public stdx::contiguous_container<fixed_array_list<T, N
                          public stdx::equatable<fixed_array_list<T, N>>,
                          public stdx::comparable<fixed_array_list<T, N>> {
   public:
-    friend stdx::container<fixed_array_list, T>;
-    friend stdx::contiguous_container<fixed_array_list, T>;
-
     using size_type = typename container<fixed_array_list, T>::size_type;
     using reference = typename container<fixed_array_list, T>::reference;
     using const_reference = typename container<fixed_array_list, T>::const_reference;
@@ -55,8 +55,9 @@ class fixed_array_list : public stdx::contiguous_container<fixed_array_list<T, N
     /// @details Time:  O(n), where n = other.size() — elements are moved one-by-one since each object owns its own
     /// stack buffer
     ///          Space: O(1)
+    ///          noexcept when T is nothrow move constructible, since every element is moved individually.
     /// @param other Container to move from.
-    fixed_array_list(fixed_array_list&& other);
+    fixed_array_list(fixed_array_list&& other) noexcept(std::is_nothrow_move_constructible<T>::value);
 
     /// @brief Destructor. Destroys all live elements; the stack buffer is reclaimed with the object.
     /// @details Time:  O(n), where n = size()
@@ -76,9 +77,12 @@ class fixed_array_list : public stdx::contiguous_container<fixed_array_list<T, N
     /// @details Time:  O(n), where n = other.size() — elements are moved one-by-one since each object owns its own
     /// stack buffer
     ///          Space: O(1) — no allocation is performed
+    ///          noexcept when T is nothrow move constructible and assignable: elements are move-assigned into
+    ///          live slots and move-constructed into the remaining raw slots.
     /// @param other Container to move from.
     /// @return Reference to this container.
-    fixed_array_list& operator=(fixed_array_list&& other);
+    fixed_array_list& operator=(fixed_array_list&& other) noexcept(std::is_nothrow_move_assignable<T>::value &&
+                                                                   std::is_nothrow_move_constructible<T>::value);
 
     // ===== Element Access =====
 
@@ -91,6 +95,12 @@ class fixed_array_list : public stdx::contiguous_container<fixed_array_list<T, N
     const T* data() const { return reinterpret_cast<const T*>(m_data); }
 
     // ==== Capacity ====
+
+    /// @brief Returns the number of elements in the container.
+    /// @details Time:  O(1)
+    ///          Space: O(1)
+    /// @return The number of elements in the container.
+    size_type size() const noexcept { return m_size; }
 
     /// @brief Returns the maximum number of elements this container can hold. Always equal to N.
     /// @details Time:  O(1)
@@ -198,8 +208,17 @@ class fixed_array_list : public stdx::contiguous_container<fixed_array_list<T, N
     ///        Iterators remain valid but now refer to the other container's elements.
     /// @details Time:  O(n) — swaps elements one-by-one since each object owns its own stack buffer
     ///          Space: O(1)
+    ///          noexcept when T is nothrow move constructible and assignable, since swapping is implemented with
+    ///          the container's move operations.
     /// @param other Container to swap with.
-    void swap(fixed_array_list& other);
+    void swap(fixed_array_list& other) noexcept(std::is_nothrow_move_assignable<T>::value &&
+                                                std::is_nothrow_move_constructible<T>::value);
+
+    /// @brief Destroys all elements. size() becomes zero; capacity() is unchanged.
+    /// @details Time:  O(n) — destructs each element
+    ///          Space: O(1)
+    ///          Invalidates all iterators and references to elements.
+    void clear();
 
   private:
     /// @brief Current number of live elements in the container.
@@ -207,20 +226,6 @@ class fixed_array_list : public stdx::contiguous_container<fixed_array_list<T, N
 
     /// @brief Fixed sized storage for this container
     alignas(T) unsigned char m_data[sizeof(T) * (N == 0 ? 1 : N)];
-
-    /// @brief Constructs a T at `location` from `args` via placement new. Hook used by the shared insert
-    ///        helpers in contiguous_container. Perfect-forwards, so it copy-, move-, or emplace-constructs
-    ///        with no extra overhead.
-    /// @param location Raw storage to construct into.
-    /// @param args     Arguments forwarded to T's constructor.
-    template <typename... Args>
-    void construct(T* location, Args&&... args) {
-        ::new (static_cast<void*>(location)) T(std::forward<Args>(args)...);
-    }
-
-    /// @brief Destroys the T at `location` by calling its destructor directly.
-    /// @param location Pointer to the live object to destroy.
-    void destroy(T* location) { location->~T(); }
 
     /// @brief Resizes the container to contain count elements.
     /// @details Time:  O(n), where n is the difference between the current size and count
@@ -239,33 +244,36 @@ class fixed_array_list : public stdx::contiguous_container<fixed_array_list<T, N
 
 // ===== Inline fixed_array_list Implementation =====
 
+// m_data is raw storage: elements are placement-new'd into it on demand, so zero-initializing the bytes here
+// would be pure overhead. NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 template <typename T, std::size_t N>
 inline fixed_array_list<T, N>::fixed_array_list() : contiguous_container<fixed_array_list, T>(), m_size(0) {}
 
+// m_data is raw storage: construct_copy below placement-news the live elements.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 template <typename T, std::size_t N>
 inline fixed_array_list<T, N>::fixed_array_list(const fixed_array_list& other)
-    : contiguous_container<fixed_array_list, T>(other), m_size(0) {
+    : contiguous_container<fixed_array_list, T>(other), m_size(other.m_size) {
     // Copy construct the elements in other
-    for (; m_size < other.m_size; ++m_size) {
-        construct(data() + m_size, other[m_size]);
-    }
+    stdx::allocator<T> alloc;
+    internal::contiguous_container::construct_copy(alloc, data(), other.data(), other.m_size);
 }
 
+// m_data is raw storage: construct_move below placement-news the live elements.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 template <typename T, std::size_t N>
-inline fixed_array_list<T, N>::fixed_array_list(fixed_array_list&& other)
-    : contiguous_container<fixed_array_list, T>(std::move(other)), m_size(0) {
+inline fixed_array_list<T, N>::fixed_array_list(fixed_array_list&& other) noexcept(
+    std::is_nothrow_move_constructible<T>::value)
+    : contiguous_container<fixed_array_list, T>(std::move(other)), m_size(other.m_size) {
     // Move construct (steal) the elements in other
-    for (; m_size < other.m_size; ++m_size) {
-        construct(data() + m_size, std::move(other[m_size]));
-        destroy(other.data() + m_size); // Destroy other's moved-from elements
-    }
-
+    stdx::allocator<T> alloc;
+    internal::contiguous_container::construct_move(alloc, data(), alloc, other.data(), other.m_size);
     other.m_size = 0;
 }
 
 template <typename T, std::size_t N>
 inline fixed_array_list<T, N>::~fixed_array_list() {
-    this->clear();
+    clear();
 }
 
 template <typename T, std::size_t N>
@@ -275,71 +283,24 @@ inline fixed_array_list<T, N>& fixed_array_list<T, N>::operator=(const fixed_arr
     }
 
     // Assign elements from other
-    if (m_size < other.m_size) // this container contains less elements than other
-    {
-        // Copy assign all elements from other up to current size
-        size_type i = 0U;
-        for (; i < m_size; ++i) {
-            data()[i] = other[i];
-        }
-
-        // Copy construct remaining elements from other
-        for (; i < other.m_size; ++i) {
-            construct(data() + i, other[i]);
-        }
-    } else // this container contains the same or more elements than other
-    {
-        // Copy assign all elements from other
-        size_type i = 0U;
-        for (; i < other.m_size; ++i) {
-            data()[i] = other[i];
-        }
-
-        // Remove remaining elements in this
-        for (; i < m_size; ++i) {
-            destroy(data() + i);
-        }
-    }
+    stdx::allocator<T> alloc;
+    internal::contiguous_container::assign_copy(alloc, data(), m_size, other.data(), other.m_size);
 
     m_size = other.m_size;
     return *this;
 }
 
 template <typename T, std::size_t N>
-inline fixed_array_list<T, N>& fixed_array_list<T, N>::operator=(fixed_array_list&& other) {
+inline fixed_array_list<T, N>&
+fixed_array_list<T, N>::operator=(fixed_array_list&& other) noexcept(std::is_nothrow_move_assignable<T>::value &&
+                                                                     std::is_nothrow_move_constructible<T>::value) {
     if (this == &other) {
         return *this;
     }
 
-    // Assign elements from other
-    if (m_size < other.m_size) // this container contains less elements than other
-    {
-        // Move assign all elements from other up to current size
-        size_type i = 0U;
-        for (; i < m_size; ++i) {
-            data()[i] = std::move(other[i]);
-            destroy(other.data() + i); // Destroy other's moved-from elements
-        }
-
-        // Move construct remaining elements from other
-        for (; i < other.m_size; ++i) {
-            construct(data() + i, std::move(other[i]));
-            destroy(other.data() + i); // Destroy other's moved-from elements
-        }
-    } else // this container contains the same or more elements than other
-    {
-        // Move assign all elements from other
-        size_type i = 0U;
-        for (; i < other.m_size; ++i) {
-            data()[i] = std::move(other[i]);
-            destroy(other.data() + i); // Destroy other's moved-from elements
-        }
-
-        // Remove remaining elements in this
-        for (; i < m_size; ++i) {
-            destroy(data() + i);
-        }
-    }
+    // Assign elements from other. Other keeps its (now empty) buffer
+    stdx::allocator<T> alloc;
+    internal::contiguous_container::assign_move(alloc, data(), m_size, alloc, other.data(), other.m_size);
 
     m_size = other.m_size;
     other.m_size = 0;
@@ -352,13 +313,15 @@ inline void fixed_array_list<T, N>::emplace_back(Args&&... args) {
     if (m_size == N) {
         throw std::length_error("Attempted to append to a full fixed_array_list");
     }
-    construct(data() + m_size, std::forward<Args>(args)...);
+    stdx::allocator<T> alloc; // stateless allocator
+    std::allocator_traits<stdx::allocator<T>>::construct(alloc, data() + m_size, std::forward<Args>(args)...);
     ++m_size;
 }
 
 template <typename T, std::size_t N>
 inline void fixed_array_list<T, N>::pop_back() {
-    destroy(data() + --m_size);
+    stdx::allocator<T> alloc; // stateless allocator
+    std::allocator_traits<stdx::allocator<T>>::destroy(alloc, data() + --m_size);
 }
 
 template <typename T, std::size_t N>
@@ -368,34 +331,40 @@ inline typename fixed_array_list<T, N>::iterator fixed_array_list<T, N>::emplace
         throw std::length_error("Attempted to insert into a full fixed_array_list");
     }
 
-    return this->emplace_inplace(static_cast<size_type>(pos - data()), std::forward<Args>(args)...);
+    // Stateless allocator: allocator_traits routes construct through placement new, identical to construct().
+    stdx::allocator<T> alloc;
+    return internal::contiguous_container::emplace_at(alloc, data(), m_size++, static_cast<size_type>(pos - data()),
+                                                      std::forward<Args>(args)...);
 }
 
 template <typename T, std::size_t N>
 template <typename... Args>
 inline void fixed_array_list<T, N>::resize_impl(size_type count, Args&&... args) {
-    if (m_size < count) {
-        if (count > N) {
-            throw std::length_error("Attempted to resize beyond the capacity of fixed_array_list");
-        }
-
-        for (; m_size < count; ++m_size) {
-            construct(data() + m_size, std::forward<Args>(args)...);
-        }
-    } else {
-        while (m_size > count) {
-            pop_back();
-        }
+    if (count > N) {
+        throw std::length_error("Attempted to resize beyond the capacity of fixed_array_list");
     }
+
+    stdx::allocator<T> alloc;
+    internal::contiguous_container::resize(alloc, data(), m_size, count, std::forward<Args>(args)...);
+    m_size = count;
 }
 
 template <typename T, std::size_t N>
-inline void fixed_array_list<T, N>::swap(fixed_array_list& other) {
+inline void
+fixed_array_list<T, N>::swap(fixed_array_list& other) noexcept(std::is_nothrow_move_assignable<T>::value &&
+                                                               std::is_nothrow_move_constructible<T>::value) {
     // Move (not copy) through a temporary so swap works for move-only T and avoids a full copy
     fixed_array_list temp(std::move(*this));
 
     *this = std::move(other);
     other = std::move(temp);
+}
+
+template <typename T, std::size_t N>
+inline void fixed_array_list<T, N>::clear() {
+    while (m_size > 0) {
+        pop_back();
+    }
 }
 } // namespace stdx
 

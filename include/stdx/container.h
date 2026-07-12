@@ -17,17 +17,11 @@ class container {
     using reference = T&;
     using const_reference = const T&;
 
-    /// @brief Returns the number of elements in the container.
-    /// @details Time:  O(1)
-    ///          Space: O(1)
-    /// @return The number of elements in the container.
-    size_type size() const noexcept { return derived().m_size; }
-
     /// @brief Checks if the container has no elements.
     /// @details Time:  O(1)
     ///          Space: O(1)
     /// @return true if the container is empty, false otherwise.
-    bool empty() const noexcept { return size() == 0; }
+    bool empty() const noexcept { return derived().size() == 0; }
 
     /// @brief Returns the maximum number of elements the container is able to hold due to system or implementation
     /// limitations.

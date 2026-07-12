@@ -313,6 +313,61 @@ TEST(FixedArrayListConstructorTest, MoveAssignmentDestroysSourceElements) {
     EXPECT_EQ(2, srcCount);
 }
 
+TEST(FixedArrayListConstructorTest, MoveAssignmentDestroysSourceElementsWhenDestinationSmaller) {
+    int srcCount = 0;
+    int dstCount = 0;
+    {
+        stdx::fixed_array_list<DestructorCounter, 4> src;
+        src.emplace_back(&srcCount);
+        src.emplace_back(&srcCount);
+        src.emplace_back(&srcCount);
+
+        stdx::fixed_array_list<DestructorCounter, 4> dst;
+        dst.emplace_back(&dstCount);
+
+        dst = std::move(src);
+        // All of src's moved-from elements must be destroyed: both the one that was move-assigned
+        // over dst's existing element and the two that were move-constructed into new slots
+        EXPECT_EQ(3, srcCount);
+        // dst's existing element was assigned over, not destroyed
+        EXPECT_EQ(0, dstCount);
+        ASSERT_EQ(3u, dst.size());
+
+        for (auto& e : dst) {
+            e.count = nullptr;
+        }
+    }
+    EXPECT_EQ(3, srcCount);
+    EXPECT_EQ(0, dstCount);
+}
+
+TEST(FixedArrayListConstructorTest, MoveAssignmentDestroysSourceAndExcessDestinationElements) {
+    int srcCount = 0;
+    int dstCount = 0;
+    {
+        stdx::fixed_array_list<DestructorCounter, 4> src;
+        src.emplace_back(&srcCount);
+
+        stdx::fixed_array_list<DestructorCounter, 4> dst;
+        dst.emplace_back(&dstCount);
+        dst.emplace_back(&dstCount);
+        dst.emplace_back(&dstCount);
+
+        dst = std::move(src);
+        // src's moved-from element must be destroyed as part of the move
+        EXPECT_EQ(1, srcCount);
+        // dst's two excess elements beyond src's size must be destroyed
+        EXPECT_EQ(2, dstCount);
+        ASSERT_EQ(1u, dst.size());
+
+        for (auto& e : dst) {
+            e.count = nullptr;
+        }
+    }
+    EXPECT_EQ(1, srcCount);
+    EXPECT_EQ(2, dstCount);
+}
+
 // ===== Element Access Tests =====
 
 TEST(FixedArrayListElementAccessTest, AtValidIndex) {
