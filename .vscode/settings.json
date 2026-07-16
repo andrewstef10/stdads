@@ -21,6 +21,5 @@
     "editor.insertSpaces": true,
     "editor.inlayHints.enabled": "offUnlessPressed",
     "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true,
-    "C_Cpp.intelliSenseEngine": "disabled"
+    "files.trimFinalNewlines": true
 }

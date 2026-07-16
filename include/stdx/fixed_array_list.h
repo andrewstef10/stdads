@@ -256,7 +256,8 @@ inline fixed_array_list<T, N>::fixed_array_list(const fixed_array_list& other)
     : contiguous_container<fixed_array_list, T>(other), m_size(other.m_size) {
     // Copy construct the elements in other
     stdx::allocator<T> alloc;
-    internal::contiguous_container::construct_copy(alloc, data(), other.data(), other.m_size);
+    namespace icc = internal::contiguous_container;
+    icc::construct_copy(alloc, data(), icc::make_view(other.data(), other.m_size));
 }
 
 // m_data is raw storage: construct_move below placement-news the live elements.
@@ -267,7 +268,8 @@ inline fixed_array_list<T, N>::fixed_array_list(fixed_array_list&& other) noexce
     : contiguous_container<fixed_array_list, T>(std::move(other)), m_size(other.m_size) {
     // Move construct (steal) the elements in other
     stdx::allocator<T> alloc;
-    internal::contiguous_container::construct_move(alloc, data(), alloc, other.data(), other.m_size);
+    namespace icc = internal::contiguous_container;
+    icc::construct_move(alloc, data(), alloc, icc::make_view(other.data(), other.m_size));
     other.m_size = 0;
 }
 
@@ -284,7 +286,8 @@ inline fixed_array_list<T, N>& fixed_array_list<T, N>::operator=(const fixed_arr
 
     // Assign elements from other
     stdx::allocator<T> alloc;
-    internal::contiguous_container::assign_copy(alloc, data(), m_size, other.data(), other.m_size);
+    namespace icc = internal::contiguous_container;
+    icc::assign_copy(alloc, icc::make_view(data(), m_size), icc::make_view(other.data(), other.m_size));
 
     m_size = other.m_size;
     return *this;
@@ -300,7 +303,8 @@ fixed_array_list<T, N>::operator=(fixed_array_list&& other) noexcept(std::is_not
 
     // Assign elements from other. Other keeps its (now empty) buffer
     stdx::allocator<T> alloc;
-    internal::contiguous_container::assign_move(alloc, data(), m_size, alloc, other.data(), other.m_size);
+    namespace icc = internal::contiguous_container;
+    icc::assign_move(alloc, icc::make_view(data(), m_size), alloc, icc::make_view(other.data(), other.m_size));
 
     m_size = other.m_size;
     other.m_size = 0;
@@ -333,8 +337,9 @@ inline typename fixed_array_list<T, N>::iterator fixed_array_list<T, N>::emplace
 
     // Stateless allocator: allocator_traits routes construct through placement new, identical to construct().
     stdx::allocator<T> alloc;
-    return internal::contiguous_container::emplace_at(alloc, data(), m_size++, static_cast<size_type>(pos - data()),
-                                                      std::forward<Args>(args)...);
+    namespace icc = internal::contiguous_container;
+    return icc::emplace_at(alloc, icc::make_view(data(), m_size++), static_cast<size_type>(pos - data()),
+                           std::forward<Args>(args)...);
 }
 
 template <typename T, std::size_t N>
@@ -345,7 +350,8 @@ inline void fixed_array_list<T, N>::resize_impl(size_type count, Args&&... args)
     }
 
     stdx::allocator<T> alloc;
-    internal::contiguous_container::resize(alloc, data(), m_size, count, std::forward<Args>(args)...);
+    namespace icc = internal::contiguous_container;
+    icc::resize(alloc, icc::make_view(data(), m_size), count, std::forward<Args>(args)...);
     m_size = count;
 }
 

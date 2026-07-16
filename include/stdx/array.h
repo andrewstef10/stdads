@@ -15,6 +15,9 @@ namespace stdx {
 template <typename T, std::size_t N>
 struct array {
 
+    using value_type = T;
+    using size_type = std::size_t;
+
     using iterator = T*;
     using const_iterator = const T*;
     using reverse_iterator = stdx::reverse_iterator<iterator>;
@@ -39,8 +42,8 @@ struct array {
     /// @param pos Position of the element to return.
     /// @return Reference to the requested element.
     /// @exception std::out_of_range if pos is out of range (pos >= size()).
-    T& at(std::size_t pos) { return internal::contiguous_container::at(elems, N, pos); }
-    const T& at(std::size_t pos) const { return internal::contiguous_container::at(elems, N, pos); }
+    T& at(std::size_t pos) { return internal::contiguous_container::at(*this, pos); }
+    const T& at(std::size_t pos) const { return internal::contiguous_container::at(*this, pos); }
 
     /// @brief Returns a reference to the element at specified location pos, without bounds checking.
     /// @param index Position of the element to return.
@@ -208,12 +211,12 @@ array<T, N>::swap(array<T, N>& other) noexcept(noexcept(std::swap(std::declval<T
 
 template <typename T, std::size_t N>
 inline bool array<T, N>::equals(const array& other) const {
-    return internal::contiguous_container::equals(elems, other.elems, N);
+    return internal::contiguous_container::equals(*this, other);
 }
 
 template <typename T, std::size_t N>
 inline bool array<T, N>::less_than(const array& other) const {
-    return internal::contiguous_container::less_than(elems, other.elems, N, N);
+    return internal::contiguous_container::less_than(*this, other);
 }
 
 template <typename T, std::size_t N, std::size_t M>

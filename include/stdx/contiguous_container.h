@@ -2,7 +2,6 @@
 #define CONTIGUOUS_CONTAINER_H
 
 #include <cstddef>
-#include <utility>
 
 #include <stdx/container.h>
 #include <stdx/internal/internal_contiguous_container.h>
@@ -32,8 +31,8 @@ class contiguous_container : public stdx::container<Derived, T> {
     /// @param index Position of the element to return.
     /// @return Reference to the requested element.
     /// @exception std::out_of_range If index >= size().
-    T& at(std::size_t index);
-    const T& at(std::size_t index) const;
+    T& at(std::size_t index) { return internal::contiguous_container::at(derived(), index); }
+    const T& at(std::size_t index) const { return internal::contiguous_container::at(derived(), index); }
 
     /// @brief Returns a reference to the element at position `index` without bounds checking.
     /// @details Time:  O(1)
@@ -104,7 +103,7 @@ class contiguous_container : public stdx::container<Derived, T> {
     ///          Requires T to be equality-comparable (operator== defined).
     /// @param other Container to compare against.
     /// @return True if both containers have equal size and all elements compare equal.
-    bool equals(const Derived& other) const;
+    bool equals(const Derived& other) const { return internal::contiguous_container::equals(derived(), other); }
 
     /// @brief Performs a lexicographic less-than comparison using operator<.
     /// @details Time:  O(n) — compares up to min(size(), other.size()) elements
@@ -112,7 +111,7 @@ class contiguous_container : public stdx::container<Derived, T> {
     ///          Requires T to be less-than-comparable (operator< defined).
     /// @param other Container to compare against.
     /// @return True if this container is lexicographically less than `other`.
-    bool less_than(const Derived& other) const;
+    bool less_than(const Derived& other) const { return internal::contiguous_container::less_than(derived(), other); }
 
     // ===================
     // ==== Modifiers ====
@@ -124,7 +123,7 @@ class contiguous_container : public stdx::container<Derived, T> {
     ///          Invalidates the iterator at pos and all iterators/references after it.
     /// @param pos Iterator to the element to remove.
     /// @return Iterator to the element that followed the removed one, or end() if pos was the last element.
-    iterator erase(const_iterator pos);
+    iterator erase(const_iterator pos) { return erase(pos, pos + 1); }
 
     /// @brief Removes all elements in the range [first, last), shifting elements after `last` to the left.
     /// @details Time:  O(n) — shifts elements after last forward
@@ -149,57 +148,17 @@ class contiguous_container : public stdx::container<Derived, T> {
 };
 
 template <typename Derived, typename T>
-inline T& contiguous_container<Derived, T>::at(std::size_t index) {
-    return internal::contiguous_container::at(derived().data(), derived().size(), index);
-}
-
-template <typename Derived, typename T>
-inline const T& contiguous_container<Derived, T>::at(std::size_t index) const {
-    return internal::contiguous_container::at(derived().data(), derived().size(), index);
-}
-
-template <typename Derived, typename T>
-inline bool contiguous_container<Derived, T>::equals(const Derived& other) const {
-    if (derived().size() != other.size()) {
-        return false;
-    }
-    return internal::contiguous_container::equals(derived().data(), other.data(), other.size());
-}
-
-template <typename Derived, typename T>
-inline bool contiguous_container<Derived, T>::less_than(const Derived& other) const {
-    return internal::contiguous_container::less_than(derived().data(), other.data(), derived().size(), other.size());
-}
-
-template <typename Derived, typename T>
-inline typename contiguous_container<Derived, T>::iterator contiguous_container<Derived, T>::erase(const_iterator pos) {
-    const std::size_t INDEX = static_cast<std::size_t>(pos - derived().data());
-
-    // Move elements [INDEX + 1, size()) left by one slot, replacing the element at INDEX
-    for (std::size_t i = INDEX; i < derived().size() - 1; ++i) {
-        derived()[i] = std::move(derived()[i + 1]);
-    }
-
-    // Destroy the last element
-    derived().pop_back();
-
-    return iterator(derived().data() + INDEX);
-}
-
-template <typename Derived, typename T>
 inline typename contiguous_container<Derived, T>::iterator
 contiguous_container<Derived, T>::erase(const_iterator first, const_iterator last) {
     const std::size_t FIRST = static_cast<std::size_t>(first - derived().data());
+    const std::size_t LAST = static_cast<std::size_t>(last - derived().data());
 
-    // remove values in range [first, last)
-    std::size_t left = FIRST;
-    std::size_t right = static_cast<std::size_t>(last - derived().data());
-    for (; right < derived().size(); ++left, ++right) {
-        derived()[left] = std::move(derived()[right]);
-    }
+    // Close the gap by moving the tail elements down onto it
+    namespace icc = internal::contiguous_container;
+    const std::size_t NEW_SIZE = icc::shift_left(icc::make_view(derived().data(), derived().size()), FIRST, LAST);
 
-    // destroy the remaining elements
-    while (derived().size() > left) {
+    // Destroy the moved-from tail elements
+    while (derived().size() > NEW_SIZE) {
         derived().pop_back();
     }
 

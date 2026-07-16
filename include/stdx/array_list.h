@@ -73,6 +73,23 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
         std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value ||
         internal::alloc_is_always_equal<Allocator>::type::value);
 
+    /// @brief Replaces the contents of the container.
+    /// @details Time: o(n) where n == count
+    ///          Space: TODO
+    /// @param count The new size of the container
+    /// @param value The value to initialize elements of the container with
+    void assign(std::size_t count, const T& value);
+
+    /// @brief Replaces the contents with copies of those in the range [first, last).
+    /// @details Time: O(n) where n is the distance between `first` and `last`
+    ///          Space: TODO
+    ///          If either argument is an iterator into *this, the behavior is undefined.
+    /// @tparam InputIt Iterator type
+    /// @param first first iterator defining the source range of elements to copy
+    /// @param last  last iterator defining the source range of elements to copy
+    template <class InputIt>
+    void assign(InputIt first, InputIt last);
+
     /// @brief Returns the allocator associated with the container.
     /// @details Time:  O(1)
     ///          Space: O(1)
@@ -313,7 +330,8 @@ inline array_list<T, Allocator, GrowthPolicy>::array_list(const array_list<T, Al
     }
 
     // Copy construct the all elements in other
-    internal::contiguous_container::construct_copy(m_alloc, m_data, other.m_data, other.m_size);
+    namespace icc = internal::contiguous_container;
+    icc::construct_copy(m_alloc, m_data, icc::make_view(other.data(), other.m_size));
     m_size = other.m_size;
 }
 
@@ -359,7 +377,8 @@ array_list<T, Allocator, GrowthPolicy>::operator=(const array_list<T, Allocator,
     }
 
     // Assign elements from other
-    internal::contiguous_container::assign_copy(m_alloc, m_data, m_size, other.m_data, other.m_size);
+    namespace icc = internal::contiguous_container;
+    icc::assign_copy(m_alloc, icc::make_view(m_data, m_size), icc::make_view(other.data(), other.m_size));
 
     m_size = other.m_size;
     return *this;
@@ -398,13 +417,34 @@ array_list<T, Allocator, GrowthPolicy>::operator=(array_list<T, Allocator, Growt
 
         // Assign elements from other. Other keeps its (now empty) buffer: only its own
         // allocator may deallocate it, which happens in other's destructor.
-        internal::contiguous_container::assign_move(m_alloc, m_data, m_size, other.m_alloc, other.m_data, other.m_size);
+        namespace icc = internal::contiguous_container;
+        icc::assign_move(m_alloc, icc::make_view(m_data, m_size), other.m_alloc,
+                         icc::make_view(other.m_data, other.m_size));
     }
 
     m_size = other.m_size;
     other.m_size = 0;
     return *this;
 }
+
+template <typename T, typename Allocator, typename GrowthPolicy>
+inline void array_list<T, Allocator, GrowthPolicy>::assign(std::size_t count, const T& value) {
+    if (m_capacity < count) {
+        // resize and construct elements in same loop
+
+        clear();
+        realloc(m_growth(m_capacity, count));
+    }
+
+    namespace icc = internal::contiguous_container;
+    icc::assign_copy(m_alloc, icc::make_view(m_data, m_size), count, value);
+
+    m_size = count;
+}
+
+template <typename T, typename Allocator, typename GrowthPolicy>
+template <class InputIt>
+inline void array_list<T, Allocator, GrowthPolicy>::assign(InputIt, InputIt) {} // NOLINT
 
 template <typename T, typename Allocator, typename GrowthPolicy>
 inline void array_list<T, Allocator, GrowthPolicy>::reserve(std::size_t n) {
@@ -445,7 +485,8 @@ array_list<T, Allocator, GrowthPolicy>::emplace(const_iterator pos, Args&&... ar
         return emplace_realloc(INDEX, std::forward<Args>(args)...);
     }
 
-    return internal::contiguous_container::emplace_at(m_alloc, m_data, m_size++, INDEX, std::forward<Args>(args)...);
+    namespace icc = internal::contiguous_container;
+    return icc::emplace_at(m_alloc, icc::make_view(m_data, m_size++), INDEX, std::forward<Args>(args)...);
 }
 
 template <typename T, typename Allocator, typename GrowthPolicy>
@@ -455,7 +496,8 @@ inline void array_list<T, Allocator, GrowthPolicy>::resize_impl(std::size_t coun
         realloc(m_growth(m_capacity, count));
     }
 
-    internal::contiguous_container::resize(m_alloc, data(), m_size, count, std::forward<Args>(args)...);
+    namespace icc = internal::contiguous_container;
+    icc::resize(m_alloc, icc::make_view(m_data, m_size), count, std::forward<Args>(args)...);
     m_size = count;
 }
 
