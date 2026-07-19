@@ -246,22 +246,37 @@ void assign_copy(Allocator& alloc, view<T> dest, std::size_t count, const T& val
 /// @param src   View of the elements to copy from.
 template <typename Allocator, typename T>
 void assign_copy(Allocator& alloc, view<T> dest, view<const T> src) {
-    if (dest.size < src.size) { // if dest contains less elements than src
+    assign_copy(alloc, dest, src.data, src.size);
+}
+
+/// @brief Replaces the live elements of `dest` with copies of the elements of the container defined by the forward
+///        iterator `first` and `count` number of elements past `first`.
+/// @details Time:  O(n), where n = max(dest.size, src.size)
+///          Space: O(1)
+///          Precondition: dest holds dest.size live elements backed by raw storage for at least src.size elements, and
+///          does not overlap src. The caller remains responsible for tracking the new element count.
+/// @param alloc Allocator used to construct and destroy elements.
+/// @param dest  View of the live destination elements.
+/// @param first Forward iterator pointing to the first element to copy assign to dest
+/// @param count Number of elements to copy starting with `first`
+template <typename Allocator, typename T, typename ForwardIt>
+void assign_copy(Allocator& alloc, view<T> dest, ForwardIt first, std::size_t count) {
+    std::size_t i = 0;
+    ForwardIt src = first;
+    if (dest.size < count) { // if dest contains less elements than src
         // Copy assign all elements from src up to dest's live count
-        std::size_t i = 0;
-        for (; i < dest.size; ++i) {
-            dest.data[i] = src.data[i];
+        for (; i < dest.size; ++i, ++src) {
+            dest.data[i] = *src;
         }
 
         // Copy construct the remaining elements from src
-        for (; i < src.size; ++i) {
-            std::allocator_traits<Allocator>::construct(alloc, dest.data + i, src.data[i]);
+        for (; i < count; ++i, ++src) {
+            std::allocator_traits<Allocator>::construct(alloc, dest.data + i, *src);
         }
     } else {
         // Copy assign all elements from src
-        std::size_t i = 0;
-        for (; i < src.size; ++i) {
-            dest.data[i] = src.data[i];
+        for (; i < count; ++i, ++src) {
+            dest.data[i] = *src;
         }
 
         // Destroy the surplus elements in dest

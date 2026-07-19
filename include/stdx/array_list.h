@@ -444,7 +444,18 @@ inline void array_list<T, Allocator, GrowthPolicy>::assign(std::size_t count, co
 
 template <typename T, typename Allocator, typename GrowthPolicy>
 template <class InputIt>
-inline void array_list<T, Allocator, GrowthPolicy>::assign(InputIt, InputIt) {} // NOLINT
+inline void array_list<T, Allocator, GrowthPolicy>::assign(InputIt first, InputIt last) {
+    const std::size_t COUNT = std::distance(first, last);
+    if (m_capacity < COUNT) {
+        clear();
+        realloc(m_growth(m_capacity, COUNT));
+    }
+
+    namespace icc = internal::contiguous_container;
+    icc::assign_copy(m_alloc, icc::make_view(m_data, m_size), first, COUNT);
+
+    m_size = COUNT;
+}
 
 template <typename T, typename Allocator, typename GrowthPolicy>
 inline void array_list<T, Allocator, GrowthPolicy>::reserve(std::size_t n) {
