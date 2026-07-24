@@ -1,6 +1,5 @@
 #include <cstddef>
 #include <gtest/gtest.h>
-#include <limits>
 #include <stdx/array_list.h>
 #include <string>
 #include <type_traits>

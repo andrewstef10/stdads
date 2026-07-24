@@ -6,6 +6,7 @@
 
 #include <stdx/internal/internal_contiguous_container.h>
 #include <stdx/iterator.h>
+#include <stdx/span.h>
 
 namespace stdx {
 
@@ -191,6 +192,20 @@ struct array {
 /// @return An Array size N + M with contents of lhs and then rhs
 template <typename T, std::size_t N, std::size_t M>
 array<T, N + M> operator+(const array<T, N>& lhs, const array<T, M>& rhs);
+
+/// @brief Constructs a span viewing all N elements of the array `array`.
+/// @details Because the size of the array (`N`) is known at compile time, the view returned will have a fixed size
+///          which provides the following optimizations:
+///          - The returned view's size() function can be determined at compile time (returns N)
+///          - The returned view will have a sizeof equal to sizeof(T*)
+/// @tparam T The class type stored in `array`
+/// @tparam N The size of `array`
+/// @param array array to view.
+/// @return A view viewing the contents of `array` with static size N
+template <typename T, std::size_t N>
+span<T, N> make_span(array<T, N> array) noexcept {
+    return span<T, N>(array.data());
+}
 
 // ===== Inline Array Implementation =====
 
