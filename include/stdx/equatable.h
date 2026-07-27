@@ -33,13 +33,13 @@ class equatable {
     /// @param lhs left hand side
     /// @param rhs right had side
     /// @return True if lhs is equal to rhs, false otherwise.
-    friend bool operator==(const Derived& lhs, const Derived& rhs) { return lhs.equals(rhs); }
+    friend constexpr bool operator==(const Derived& lhs, const Derived& rhs) { return lhs.equals(rhs); }
 
     /// @brief Inequality operator
     /// @param lhs left hand side iterator
     /// @param rhs right had side iterator
     /// @return True if lhs is not equal to rhs, false otherwise.
-    friend bool operator!=(const Derived& lhs, const Derived& rhs) { return !lhs.equals(rhs); }
+    friend constexpr bool operator!=(const Derived& lhs, const Derived& rhs) { return !lhs.equals(rhs); }
 
   protected:
     // ==== equatable should not be constructed directly ====

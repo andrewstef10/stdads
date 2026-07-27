@@ -6,8 +6,10 @@ Checks: >
   readability-*,
   cppcoreguidelines-*,
   clang-analyzer-*,
+  misc-*
 
   -readability-identifier-length,
+  -readability-redundant-typename,
   
   -bugprone-easily-swappable-parameters,
 
@@ -16,6 +18,7 @@ Checks: >
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-owning-memory,
   -cppcoreguidelines-use-default-member-init,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
 
   -modernize-use-trailing-return-type,
   -modernize-use-constraints,
@@ -24,6 +27,9 @@ Checks: >
   -modernize-avoid-c-arrays,
   -modernize-type-traits,
   -modernize-use-default-member-init,
+  -modernize-concat-nested-namespaces,
+
+  -misc-include-cleaner,
 
 # Treat all enabled checks as errors
 WarningsAsErrors: "*"
@@ -83,3 +89,4 @@ CheckOptions:
   # -------------------------
 
   - { key: readability-magic-numbers.IgnoredIntegerValues, value: '0;1;2;3,4;10' }
+  - { key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic, value: true }

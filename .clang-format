@@ -8,3 +8,8 @@ UseTab: Never
 InsertNewlineAtEOF: true
 PointerAlignment: Left
 AlwaysBreakTemplateDeclarations: true
+
+PackConstructorInitializers: NextLine
+BreakConstructorInitializers: BeforeComma
+
+CompactNamespaces: true

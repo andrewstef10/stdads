@@ -79,3 +79,5 @@ SEARCHENGINE           = YES
 # ---- Disable unused outputs ----
 GENERATE_LATEX         = NO
 GENERATE_DOCSET        = NO
+
+EXCLUDE_SYMBOLS = stdx::internal::*

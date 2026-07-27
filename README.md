@@ -18,6 +18,7 @@
   - [Formatting and static analysis](#formatting-and-static-analysis)
   - [Generating a coverage report](#generating-a-coverage-report)
   - [compile_commands.json and clangd](#compile_commandsjson-and-clangd)
+- [C++ Standard Compatibility](#c-standard-compatibility)
 
 ---
 
@@ -25,7 +26,7 @@
 
 ### Minimum
 - **CMake ≥ 3.24** – required to configure the project.
-- **C++ compiler**:
+- **C++ compiler** with **C++11 or later** support:
   - Windows: MSVC cl **or** LLVM Clang/clang-cl.
   - Linux: GCC **or** LLVM Clang.
   - macOS: LLVM Clang.
@@ -141,3 +142,8 @@ Every CMake configure creates (or refreshes) a symlink at `compile_commands.json
 > **Windows:** creating this symlink requires **Developer Mode**. If it's off, CMake prints a `WARNING` during configure and clangd won't have a compilation database to work with. Enable it under **System → Advanced → For developers**, then reconfigure.
 
 clangd only reloads the database when it's notified of a file change, so after switching presets it can occasionally lag behind. If IntelliSense looks stale or broken after a fresh configure, run **clangd: Restart language server** from the Command Palette (Ctrl+shift+P) to force it to pick up the change immediately.
+When developing, it is recommended to use the `dev` CMake preset (or `windows-dev` if developing on windows). This will use an LLVM clang compiler building for debug. These configurations also integrate clang-tidy into the build process.
+
+## C++ Standard Compatibility
+
+All library code must be written to be compatible with **C++11 and later**. Do not use language or library features introduced after C++11 unless they are conditionally guarded by a feature-detection macro. The project builds with CMAKE_CXX_STANDARD 20 to allow use of C++20 features in the *build system and tests*, but the *library implementation* in include/stdx/ and src/ must remain C++11-compatible.

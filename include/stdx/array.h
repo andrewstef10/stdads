@@ -2,10 +2,11 @@
 #define ARRAY_H
 
 #include <cstddef>
-#include <stdexcept>
 #include <utility>
 
+#include <stdx/internal/internal_contiguous_container.h>
 #include <stdx/iterator.h>
+#include <stdx/span.h>
 
 namespace stdx {
 
@@ -14,6 +15,9 @@ namespace stdx {
  */
 template <typename T, std::size_t N>
 struct array {
+
+    using value_type = T;
+    using size_type = std::size_t;
 
     using iterator = T*;
     using const_iterator = const T*;
@@ -34,13 +38,23 @@ struct array {
 
     // ===== Element Access =====
 
+    /// @brief Returns a reference to the first element in the container.
+    /// @return Reference to the first element.
+    T& front() { return elems[0]; }
+    const T& front() const { return elems[0]; }
+
+    /// @brief Returns a reference to the last element in the container.
+    /// @return Reference to the last element.
+    T& back() { return elems[N - 1]; }
+    const T& back() const { return elems[N - 1]; }
+
     /// @brief Returns a reference to the element at specified location pos, with bounds checking.
     /// If pos is not within the range of the container, an exception of type std::out_of_range is thrown.
     /// @param pos Position of the element to return.
     /// @return Reference to the requested element.
     /// @exception std::out_of_range if pos is out of range (pos >= size()).
-    T& at(std::size_t pos);
-    const T& at(std::size_t pos) const;
+    T& at(std::size_t pos) { return internal::contiguous_container::at(*this, pos); }
+    const T& at(std::size_t pos) const { return internal::contiguous_container::at(*this, pos); }
 
     /// @brief Returns a reference to the element at specified location pos, without bounds checking.
     /// @param index Position of the element to return.
@@ -55,16 +69,6 @@ struct array {
     /// to the address of the first element.
     T* data() { return elems; }
     const T* data() const { return elems; }
-
-    /// @brief Returns a reference to the last element in the container.
-    /// @return Reference to the last element.
-    T& back() { return elems[N - 1]; }
-    const T& back() const { return elems[N - 1]; }
-
-    /// @brief Returns a reference to the first element in the container.
-    /// @return Reference to the first element.
-    T& front() { return elems[0]; }
-    const T& front() const { return elems[0]; }
 
     // ==== Iterators ====
 
@@ -189,23 +193,21 @@ struct array {
 template <typename T, std::size_t N, std::size_t M>
 array<T, N + M> operator+(const array<T, N>& lhs, const array<T, M>& rhs);
 
+/// @brief Constructs a span viewing all N elements of the array `array`.
+/// @details Because the size of the array (`N`) is known at compile time, the view returned will have a fixed size
+///          which provides the following optimizations:
+///          - The returned view's size() function can be determined at compile time (returns N)
+///          - The returned view will have a sizeof equal to sizeof(T*)
+/// @tparam T The class type stored in `array`
+/// @tparam N The size of `array`
+/// @param array array to view.
+/// @return A view viewing the contents of `array` with static size N
+template <typename T, std::size_t N>
+span<T, N> make_span(array<T, N> array) noexcept {
+    return span<T, N>(array.data());
+}
+
 // ===== Inline Array Implementation =====
-
-template <typename T, std::size_t N>
-inline T& array<T, N>::at(std::size_t pos) {
-    if (pos >= N) {
-        throw std::out_of_range("Index outside the bounds of the array");
-    }
-    return elems[pos];
-}
-
-template <typename T, std::size_t N>
-inline const T& array<T, N>::at(std::size_t pos) const {
-    if (pos >= N) {
-        throw std::out_of_range("Index outside the bounds of the array");
-    }
-    return elems[pos];
-}
 
 template <typename T, std::size_t N>
 inline void array<T, N>::fill(const T& value) {
@@ -224,23 +226,12 @@ array<T, N>::swap(array<T, N>& other) noexcept(noexcept(std::swap(std::declval<T
 
 template <typename T, std::size_t N>
 inline bool array<T, N>::equals(const array& other) const {
-    bool equals = true;
-    for (std::size_t i = 0; equals && i < N; ++i) {
-        equals = elems[i] == other.elems[i];
-    }
-    return equals;
+    return internal::contiguous_container::equals(*this, other);
 }
 
 template <typename T, std::size_t N>
 inline bool array<T, N>::less_than(const array& other) const {
-    bool lessThan = false;
-    for (std::size_t i = 0; i < N; ++i) {
-        if (!(elems[i] == other.elems[i])) {
-            lessThan = elems[i] < other.elems[i];
-            break;
-        }
-    }
-    return lessThan;
+    return internal::contiguous_container::less_than(*this, other);
 }
 
 template <typename T, std::size_t N, std::size_t M>

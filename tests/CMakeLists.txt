@@ -13,10 +13,14 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(${UNIT_TEST_TARGET_NAME}
     test_array.cpp
+    test_array_list.cpp
     test_ctype.cpp
+    test_fixed_array_list.cpp
     test_iterator.cpp
     test_math.cpp
+    test_memory.cpp
     test_num_utils.cpp
+    test_span.cpp
     test_stdxlib.cpp
     test_stopwatch.cpp
     test_string.cpp
