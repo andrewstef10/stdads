@@ -6,6 +6,19 @@
 #include <utility>
 #include <vector>
 
+#include "support/contiguous_container_test_suite.h"
+#include "support/list_test_suite.h"
+
+namespace StdxTest {
+
+// Instantiate general contiguous container test cases for array list.
+// Covers indexing and iteration as well as basic size tests.
+using ArrayListTypes = ::testing::Types<stdx::array_list<int>>;
+INSTANTIATE_TYPED_TEST_SUITE_P(ArrayListContiguousContainerTests, ContiguousContainerTest, ArrayListTypes);
+
+// Instantiate general list container test cases.
+INSTANTIATE_TYPED_TEST_SUITE_P(ArrayListListTests, ListTest, ArrayListTypes);
+
 // ===== Constructor / Assignment Tests =====
 
 TEST(ArrayListConstructorTest, DefaultConstructorEmpty) {
@@ -2178,3 +2191,5 @@ TEST(ArrayListMoveAssignmentTest, PocmaPropagatesAllocatorWithoutLeak) {
     }
     EXPECT_EQ(0, alloc::live_allocations);
 }
+
+} // namespace StdxTest

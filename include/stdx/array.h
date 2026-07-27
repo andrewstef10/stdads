@@ -38,6 +38,16 @@ struct array {
 
     // ===== Element Access =====
 
+    /// @brief Returns a reference to the first element in the container.
+    /// @return Reference to the first element.
+    T& front() { return elems[0]; }
+    const T& front() const { return elems[0]; }
+
+    /// @brief Returns a reference to the last element in the container.
+    /// @return Reference to the last element.
+    T& back() { return elems[N - 1]; }
+    const T& back() const { return elems[N - 1]; }
+
     /// @brief Returns a reference to the element at specified location pos, with bounds checking.
     /// If pos is not within the range of the container, an exception of type std::out_of_range is thrown.
     /// @param pos Position of the element to return.
@@ -59,16 +69,6 @@ struct array {
     /// to the address of the first element.
     T* data() { return elems; }
     const T* data() const { return elems; }
-
-    /// @brief Returns a reference to the last element in the container.
-    /// @return Reference to the last element.
-    T& back() { return elems[N - 1]; }
-    const T& back() const { return elems[N - 1]; }
-
-    /// @brief Returns a reference to the first element in the container.
-    /// @return Reference to the first element.
-    T& front() { return elems[0]; }
-    const T& front() const { return elems[0]; }
 
     // ==== Iterators ====
 

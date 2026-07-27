@@ -25,6 +25,20 @@ class contiguous_container : public stdx::container<Derived, T> {
     // ===== Element Access =====
     // ==========================
 
+    /// @brief Returns a reference to the first element. Behavior is undefined if the container is empty.
+    /// @details Time:  O(1)
+    ///          Space: O(1)
+    /// @return Reference to the first element.
+    T& front() { return derived().data()[0]; }
+    const T& front() const { return derived().data()[0]; }
+
+    /// @brief Returns a reference to the last element. Behavior is undefined if the container is empty.
+    /// @details Time:  O(1)
+    ///          Space: O(1)
+    /// @return Reference to the last element.
+    T& back() { return derived().data()[derived().size() - 1]; }
+    const T& back() const { return derived().data()[derived().size() - 1]; }
+
     /// @brief Returns a reference to the element at position `index` with bounds checking.
     /// @details Time:  O(1)
     ///          Space: O(1)
@@ -41,20 +55,6 @@ class contiguous_container : public stdx::container<Derived, T> {
     /// @return Reference to the requested element.
     T& operator[](std::size_t index) { return derived().data()[index]; }
     const T& operator[](std::size_t index) const { return derived().data()[index]; }
-
-    /// @brief Returns a reference to the last element. Behavior is undefined if the container is empty.
-    /// @details Time:  O(1)
-    ///          Space: O(1)
-    /// @return Reference to the last element.
-    T& back() { return derived().data()[derived().size() - 1]; }
-    const T& back() const { return derived().data()[derived().size() - 1]; }
-
-    /// @brief Returns a reference to the first element. Behavior is undefined if the container is empty.
-    /// @details Time:  O(1)
-    ///          Space: O(1)
-    /// @return Reference to the first element.
-    T& front() { return derived().data()[0]; }
-    const T& front() const { return derived().data()[0]; }
 
     // ===================
     // ==== Iterators ====

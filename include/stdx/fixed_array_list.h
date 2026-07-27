@@ -59,6 +59,20 @@ class fixed_array_list : public stdx::contiguous_container<fixed_array_list<T, N
     /// @param other Container to move from.
     fixed_array_list(fixed_array_list&& other) noexcept(std::is_nothrow_move_constructible<T>::value);
 
+    /// @brief Constructs a fixed_array_list with contents of the range [`first`, `last`).
+    /// @tparam InputIterator Iterator type for `first` and `last`
+    /// @param first Iterator defining the start of the range of elements to copy
+    /// @param last  Iterator defining the end of the range of elements to copy
+    template <typename InputIterator>
+    fixed_array_list(InputIterator first, InputIterator last);
+
+    /// @brief Constructs a fixed_array_list from an initializer list of elements
+    /// @details Time: O(n) where n is the size of the initializer list
+    ///          Space: O(1)
+    /// @param init Initializer list to initialize the elements of the container with
+    /// @exception std::length_error If init.size() > N.
+    fixed_array_list(std::initializer_list<T> init);
+
     /// @brief Destructor. Destroys all live elements; the stack buffer is reclaimed with the object.
     /// @details Time:  O(n), where n = size()
     ///          Space: O(1)
@@ -271,6 +285,44 @@ inline fixed_array_list<T, N>::fixed_array_list(fixed_array_list&& other) noexce
     namespace icc = internal::contiguous_container;
     icc::construct_move(alloc, data(), alloc, icc::make_view(other.data(), other.m_size));
     other.m_size = 0;
+}
+
+// m_data is raw storage: construct_copy below placement-news the live elements.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+template <typename T, std::size_t N>
+template <typename InputIterator>
+inline fixed_array_list<T, N>::fixed_array_list(InputIterator first, InputIterator last)
+    : contiguous_container<fixed_array_list, T>(), m_size(0) {
+
+    const std::size_t SIZE = std::distance(first, last);
+
+    // Grow capacity to at least the size of the init list if needed
+    if (SIZE > N) {
+        throw std::length_error("Attempted to construct a fixed_array_list with first and last iterators pointing to a "
+                                "range larger than N");
+    }
+
+    // Copy construct the all elements in other
+    namespace icc = internal::contiguous_container;
+    stdx::allocator<T> alloc;
+    icc::construct_copy(alloc, data(), icc::make_view(first, SIZE));
+    m_size = SIZE;
+}
+
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+template <typename T, std::size_t N>
+inline fixed_array_list<T, N>::fixed_array_list(std::initializer_list<T> init)
+    : contiguous_container<fixed_array_list, T>(), m_size(0) {
+    // Grow capacity to at least the size of the init list if needed
+    if (init.size() > N) {
+        throw std::length_error("Attempted to construct a fixed_array_list with initializer_list size() > N");
+    }
+
+    // Copy construct the all elements in other
+    namespace icc = internal::contiguous_container;
+    stdx::allocator<T> alloc;
+    icc::construct_copy(alloc, data(), icc::make_view(init.begin(), init.size()));
+    m_size = init.size();
 }
 
 template <typename T, std::size_t N>

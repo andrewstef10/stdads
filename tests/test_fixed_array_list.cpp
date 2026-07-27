@@ -7,6 +7,11 @@
 #include <utility>
 #include <vector>
 
+#include "support/contiguous_container_test_suite.h"
+#include "support/list_test_suite.h"
+
+namespace StdxTest {
+
 // ===== Test Helpers =====
 
 namespace {
@@ -55,6 +60,16 @@ int ConstructionCounter::copy_constructions = 0;
 int ConstructionCounter::move_constructions = 0;
 
 } // namespace
+
+// Instantiate general contiguous container test cases.
+// Covers indexing and iteration as well as basic size tests.
+using FixedArrayListTypes = ::testing::Types<stdx::fixed_array_list<int, 3>, stdx::fixed_array_list<int, 10>>;
+INSTANTIATE_TYPED_TEST_SUITE_P(FixedArrayListContiguousContainerTests, ContiguousContainerTest, FixedArrayListTypes);
+
+// Instantiate general list container test cases. Uses a larger fixed capacity than FixedArrayListTypes since several
+// ListTest cases grow a container past TestValues<T>::SIZE (up to SIZE + 2 elements).
+using FixedArrayListListTypes = ::testing::Types<stdx::fixed_array_list<int, 8>>;
+INSTANTIATE_TYPED_TEST_SUITE_P(FixedArrayListListTests, ListTest, FixedArrayListListTypes);
 
 // ===== Constructor / Assignment Tests =====
 
@@ -1927,3 +1942,5 @@ TEST(FixedArrayListResizeTest, ResizeWithValueSmallerThenLargerUsesValue) {
     EXPECT_EQ(55, v[1]);
     EXPECT_EQ(55, v[2]);
 }
+
+} // namespace StdxTest

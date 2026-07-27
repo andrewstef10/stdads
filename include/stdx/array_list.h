@@ -7,6 +7,7 @@
 #include <stdx/memory.h>
 
 #include <cstddef>
+#include <initializer_list>
 #include <utility>
 
 namespace stdx {
@@ -49,6 +50,19 @@ class array_list : public stdx::contiguous_container<array_list<T, Allocator, Gr
     ///          Space: O(1)
     /// @param other Container to move from.
     array_list(array_list&& other) noexcept;
+
+    /// @brief Constructs an array_list with contents of the range [`first`, `last`).
+    /// @tparam InputIterator Iterator type for `first` and `last`
+    /// @param first Iterator defining the start of the range of elements to copy
+    /// @param last  Iterator defining the end of the range of elements to copy
+    template <typename InputIterator>
+    array_list(InputIterator first, InputIterator last);
+
+    /// @brief Constructs an array_list from an initializer list of elements
+    /// @details Time: O(n) where n is the size of the initializer list
+    ///          Space: O(1)
+    /// @param init Initializer list to initialize the elements of the container with
+    array_list(std::initializer_list<T> init);
 
     /// @brief Destructor. Destroys all elements and releases allocated memory.
     /// @details Time:  O(n), where n = size()
@@ -347,6 +361,38 @@ inline array_list<T, Allocator, GrowthPolicy>::array_list(array_list<T, Allocato
     other.m_size = 0;
     other.m_data = nullptr;
     other.m_capacity = 0;
+}
+
+template <typename T, typename Allocator, typename GrowthPolicy>
+template <typename InputIterator>
+inline array_list<T, Allocator, GrowthPolicy>::array_list(InputIterator first, InputIterator last)
+    : contiguous_container<array_list, T>(), m_size(0), m_data(nullptr), m_capacity(0), m_alloc(), m_growth() {
+
+    const std::size_t SIZE = std::distance(first, last);
+
+    // Grow capacity to at least the size of the init list if needed
+    if (m_capacity < SIZE) {
+        realloc(m_growth(m_capacity, SIZE));
+    }
+
+    // Copy construct the all elements in other
+    namespace icc = internal::contiguous_container;
+    icc::construct_copy(m_alloc, m_data, icc::make_view(first, SIZE));
+    m_size = SIZE;
+}
+
+template <typename T, typename Allocator, typename GrowthPolicy>
+inline array_list<T, Allocator, GrowthPolicy>::array_list(std::initializer_list<T> init)
+    : contiguous_container<array_list, T>(), m_size(0), m_data(nullptr), m_capacity(0), m_alloc(), m_growth() {
+    // Grow capacity to at least the size of the init list if needed
+    if (m_capacity < init.size()) {
+        realloc(m_growth(m_capacity, init.size()));
+    }
+
+    // Copy construct the all elements in other
+    namespace icc = internal::contiguous_container;
+    icc::construct_copy(m_alloc, m_data, icc::make_view(init.begin(), init.size()));
+    m_size = init.size();
 }
 
 template <typename T, typename Allocator, typename GrowthPolicy>
